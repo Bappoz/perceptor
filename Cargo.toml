@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Modular computer vision pipeline library built on ECS"
 license = "MIT"
-repository = "https://github.com/YOUR_USERNAME/perceptor"
+repository = "https://github.com/Bappoz/perceptor"
 keywords = ["computer-vision", "ecs", "image-processing", "pipeline"]
 categories = ["multimedia::images", "science"]
 
@@ -50,6 +50,7 @@ default = []
 gpu = ["dep:wgpu"]      # Aceleração via wgpu (WebGPU/Vulkan/Metal)
 ml  = []                # Marcador para habilitar plugins ML (tch-rs / ort)
 
-[[bench]]
-name = "pipeline_bench"
-harness = false
+# [[bench]]
+# name = "pipeline_bench"
+# harness = false
+# Descomentar quando criar benches/pipeline_bench.rs (Fase 1)
