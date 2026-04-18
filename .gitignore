@@ -1,0 +1,48 @@
+# Build artifacts
+/target/
+/debug/
+**/*.rs.bk
+
+# Cargo lock (manter em binários, remover em bibliotecas puras — aqui mantemos por rastreabilidade)
+# Cargo.lock
+
+# Profiling
+perf.data
+perf.data.old
+flamegraph.svg
+
+# Benchmarks gerados pelo criterion
+/criterion/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Ambientes Python (para scripts auxiliares)
+.venv/
+__pycache__/
+*.pyc
+
+# Dados de teste grandes (frames, vídeos)
+/data/
+/testdata/*.mp4
+/testdata/*.avi
+/testdata/*.mov
+
+# Modelos ML (binários pesados)
+/models/*.onnx
+/models/*.pt
+/models/*.bin
+
+# Cobertura de código
+/lcov.info
+/tarpaulin-report.html
+
+# Variáveis de ambiente
+.env
+.env.local
