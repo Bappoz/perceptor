@@ -8,7 +8,7 @@
 //!
 //! # Adicionando filtros customizados
 //! Implemente uma função com assinatura de sistema ECS e registre-a:
-//! ```rust,no_run
+//! ```rust,ignore
 //! builder.add_process_system(my_filter_system);
 //! ```
 

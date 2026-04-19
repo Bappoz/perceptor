@@ -10,7 +10,7 @@
 //! - Stream RTSP
 
 use bevy_ecs::prelude::*;
-use tracing::warn;
+use tracing::{info, warn};
 
 use crate::core::frame::{Frame, FrameMeta};
 
@@ -24,33 +24,45 @@ pub struct IoConfig {
 }
 
 /// Sistema ECS: lê um frame da fonte configurada e o spawna como entidade.
-///
 /// Registrado no `InputStage` pelo [`IoPlugin`].
-///
-/// # TODO
-/// Implementar leitura real. Atualmente é um no-op com aviso de log.
 pub fn image_reader_system(
     mut commands: Commands,
     mut config: ResMut<IoConfig>,
+    mut state: ResMut<crate::core::pipeline::PipelineState>,
 ) {
     if config.source.is_empty() {
         warn!("image_reader_system: IoConfig.source não configurado, pulando tick");
+        state.should_stop = true;
         return;
     }
 
-    // TODO: ler frame real de `config.source`
-    // Exemplo de implementação futura:
-    //
-    // let img = image::open(&config.source)?;
-    // let meta = FrameMeta {
-    //     index: config.next_index,
-    //     timestamp_us: current_timestamp_us(),
-    //     source: config.source.clone(),
-    // };
-    // let frame = Frame::from_dynamic_image(meta, img);
-    // commands.spawn(frame);
-    // config.next_index += 1;
+    let img = match image::open(&config.source) {
+        Ok(img) => img,
+        Err(e) => {
+            warn!(
+                "image_reader_system: falha ao abrir '{}': {e}",
+                config.source
+            );
+            state.should_stop = true;
+            return;
+        }
+    };
 
-    let _ = &mut commands; // silencia warning unused enquanto TODO
-    let _ = &mut config;
+    let meta = FrameMeta {
+        index: config.next_index,
+        timestamp_us: 0,
+        source: config.source.clone(),
+    };
+    let frame = Frame::from_dynamic_image(meta, img);
+    info!(
+    index = config.next_index,
+    path = %config.source,
+    "image_reader_system: spawned frame {}x{}x{}",
+    frame.height(), frame.width(), frame.channels()
+    );
+
+    commands.spawn(frame);
+    config.next_index += 1;
+
+    state.should_stop = true;
 }

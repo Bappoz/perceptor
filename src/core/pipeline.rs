@@ -73,8 +73,12 @@ impl Pipeline {
     }
 
     /// Acesso direto ao `World` (para testes e introspecção).
-    pub fn world(&self) -> &World { &self.world }
-    pub fn world_mut(&mut self) -> &mut World { &mut self.world }
+    pub fn world(&self) -> &World {
+        &self.world
+    }
+    pub fn world_mut(&mut self) -> &mut World {
+        &mut self.world
+    }
 }
 
 // ── PipelineBuilder ────────────────────────────────────────────────────────────
@@ -82,6 +86,7 @@ impl Pipeline {
 /// Builder fluente para configurar um [`Pipeline`].
 #[derive(Default)]
 pub struct PipelineBuilder {
+    world: World,
     plugins: Vec<Box<dyn Plugin>>,
     input_schedule: Schedule,
     pre_process_schedule: Schedule,
@@ -102,56 +107,39 @@ impl PipelineBuilder {
     }
 
     /// Registra um sistema no `InputStage`.
-    pub fn add_input_system<M>(
-        &mut self,
-        system: impl IntoSystemConfigs<M>,
-    ) -> &mut Self {
+    pub fn add_input_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
         self.input_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `PreProcessStage`.
-    pub fn add_pre_process_system<M>(
-        &mut self,
-        system: impl IntoSystemConfigs<M>,
-    ) -> &mut Self {
+    pub fn add_pre_process_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
         self.pre_process_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `ProcessStage`.
-    pub fn add_process_system<M>(
-        &mut self,
-        system: impl IntoSystemConfigs<M>,
-    ) -> &mut Self {
+    pub fn add_process_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
         self.process_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `PostProcessStage`.
-    pub fn add_post_process_system<M>(
-        &mut self,
-        system: impl IntoSystemConfigs<M>,
-    ) -> &mut Self {
+    pub fn add_post_process_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
         self.post_process_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `OutputStage`.
-    pub fn add_output_system<M>(
-        &mut self,
-        system: impl IntoSystemConfigs<M>,
-    ) -> &mut Self {
+    pub fn add_output_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
         self.output_schedule.add_systems(system);
         self
     }
 
     /// Constrói o [`Pipeline`] a partir da configuração atual.
     pub fn build(mut self) -> Pipeline {
-        let mut world = World::new();
-
         // Inicializa recurso de estado do pipeline
-        world.insert_resource(PipelineState::default());
+        self.world.insert_resource(PipelineState::default());
 
         // Permite que plugins façam ajustes finais após todos serem registrados
         let plugins = std::mem::take(&mut self.plugins);
@@ -160,13 +148,17 @@ impl PipelineBuilder {
         }
 
         Pipeline {
-            world,
+            world: self.world,
             input_schedule: self.input_schedule,
             pre_process_schedule: self.pre_process_schedule,
             process_schedule: self.process_schedule,
             post_process_schedule: self.post_process_schedule,
             output_schedule: self.output_schedule,
         }
+    }
+
+    pub fn world_mut(&mut self) -> &mut World {
+        &mut self.world
     }
 }
 

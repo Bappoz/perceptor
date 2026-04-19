@@ -31,3 +31,4 @@
 pub mod core;
 pub mod plugins;
 pub mod prelude;
+pub mod tests;
