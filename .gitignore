@@ -48,3 +48,4 @@ __pycache__/
 .env.local
 
 .claude
+src/tests/fixtures/output.png

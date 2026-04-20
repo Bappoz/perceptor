@@ -1,14 +1,15 @@
 use crate::{
     core::{frame::Frame, pipeline::Pipeline},
-    plugins::{filters::FiltersPlugin, io::image_reader::IoConfig, io::IoPlugin},
+    plugins::io::{config::ImageFormat, IoConfig, IoPlugin},
 };
-use bevy_ecs::prelude::*;
 
 #[test]
 fn test_image_reader_spawns_frame() {
     let mut pipeline = Pipeline::builder()
         .add_plugin(IoPlugin {
-            source: "src/tests/fixtures/cachorro.png".into(),
+            input_path: "src/tests/fixtures/cachorro.png".into(),
+            output_path: "src/tests/fixtures/output.png".into(),
+            format: ImageFormat::Png,
         })
         .build();
     // Verifica se IoConfig chegou no world
