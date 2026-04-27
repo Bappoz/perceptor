@@ -10,17 +10,10 @@
 //! Itera sobre todas as entidades com um `Frame` RGB (3 canais) e substitui
 //! `frame.data` por um tensor `[H, W, 1]` em grayscale.
 //!
-//! Frames que já possuem 1 canal são ignorados.
-//!
-//! # TODO: implementar a transformação real
-//! ```rust,no_run
-//! use ndarray::Zip;
-//! // Zip::from(out.lanes_mut(Axis(2)))
-//! //     .and(frame.data.lanes(Axis(2)))
-//! //     .par_for_each(|mut o, rgb| { ... });
-//! ```
 
 use bevy_ecs::prelude::*;
+use ndarray::Array3;
+use rayon::prelude::*;
 use tracing::trace;
 
 use crate::core::frame::Frame;
@@ -50,10 +43,7 @@ pub fn grayscale_system(
             frame.width()
         );
 
-        // TODO: implementar conversão BT.601
-        // let gray = convert_to_gray(&frame.data);
-        // frame.data = gray;
-
+        frame.data = convert_to_gray(&frame.data);
         // Marca o frame como processado para evitar re-processamento
         commands.entity(entity).insert(GrayscaleTag);
     }
@@ -65,11 +55,17 @@ pub fn grayscale_system(
 ///
 /// # Panics
 /// Panic se `input.shape()[2] != 3`.
-#[allow(dead_code)]
-fn convert_to_gray(input: &ndarray::Array3<u8>) -> ndarray::Array3<u8> {
+pub fn convert_to_gray(input: &Array3<u8>) -> Array3<u8> {
     assert_eq!(input.shape()[2], 3, "esperado tensor RGB [H, W, 3]");
-    let (h, w, _) = (input.shape()[0], input.shape()[1], input.shape()[2]);
+    let h = input.shape()[0];
+    let w = input.shape()[1];
 
-    // TODO: implementar com rayon para paralelismo por linha
-    ndarray::Array3::zeros((h, w, 1))
+    let flat: Vec<u8> = input
+        .as_slice()
+        .expect("convert_to_gray: array não é contíguo")
+        .par_chunks(3)
+        .map(|px| (0.299 * px[0] as f32 + 0.587 * px[1] as f32 + 0.114 * px[2] as f32) as u8)
+        .collect();
+
+    ndarray::Array3::from_shape_vec((h, w, 1), flat).expect("convert_to_gray: shape inválido")
 }
