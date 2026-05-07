@@ -25,6 +25,7 @@ pub struct Pipeline {
     process_schedule: Schedule,
     post_process_schedule: Schedule,
     output_schedule: Schedule,
+    max_ticks: Option<u64>,
 }
 
 impl Pipeline {
@@ -51,6 +52,14 @@ impl Pipeline {
 
         debug!("pipeline tick: OutputStage");
         self.output_schedule.run(&mut self.world);
+
+        let mut state = self.world.resource_mut::<PipelineState>();
+        state.tick_count += 1;
+        if let Some(max) = self.max_ticks {
+            if state.tick_count >= max {
+                state.should_stop = true;
+            }
+        }
 
         Ok(())
     }
@@ -93,9 +102,20 @@ pub struct PipelineBuilder {
     process_schedule: Schedule,
     post_process_schedule: Schedule,
     output_schedule: Schedule,
+    max_ticks: Option<u64>,
 }
 
 impl PipelineBuilder {
+    /// Define o número máximo de ticks antes de encerrar o pipeline automaticamente.
+    ///
+    /// Quando `tick_count >= n`, [`PipelineState::should_stop`] é definido como `true`.
+    /// Útil para processamento em lote de N frames.
+    #[must_use]
+    pub fn with_max_ticks(mut self, n: u64) -> Self {
+        self.max_ticks = Some(n);
+        self
+    }
+
     /// Registra um plugin no pipeline.
     ///
     /// O plugin receberá `&mut self` do builder e poderá adicionar sistemas.
@@ -154,6 +174,7 @@ impl PipelineBuilder {
             process_schedule: self.process_schedule,
             post_process_schedule: self.post_process_schedule,
             output_schedule: self.output_schedule,
+            max_ticks: self.max_ticks,
         }
     }
 
@@ -173,4 +194,28 @@ pub struct PipelineState {
     pub should_stop: bool,
     /// Contador de ticks executados (útil para benchmarks e logs).
     pub tick_count: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tick_count_increments_each_tick() {
+        let mut pipeline = Pipeline::builder().build();
+        assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 0);
+        pipeline.tick().unwrap();
+        assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 1);
+        pipeline.tick().unwrap();
+        assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 2);
+    }
+
+    #[test]
+    fn max_ticks_stops_pipeline_after_n_ticks() {
+        let mut pipeline = Pipeline::builder().with_max_ticks(3).build();
+        pipeline.run().unwrap();
+        let state = pipeline.world().resource::<PipelineState>();
+        assert_eq!(state.tick_count, 3);
+        assert!(state.should_stop);
+    }
 }
