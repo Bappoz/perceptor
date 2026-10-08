@@ -1,3 +1,5 @@
+//! Sistema de escrita de frames em disco.
+
 use crate::{
     frame::Frame,
     pipeline::PipelineState,
@@ -7,7 +9,7 @@ use bevy_ecs::system::{Query, Res, ResMut};
 use tracing::{info, warn};
 
 /// Sistema ECS: salva todos os frames presentes no world no caminho configurado.
-/// Registrado no `OutputStage` pelo [`IoPlugin`].
+/// Registrado no `OutputStage` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
 ///
 /// # Panics
 /// Se o tensor do frame não for contíguo em memória.

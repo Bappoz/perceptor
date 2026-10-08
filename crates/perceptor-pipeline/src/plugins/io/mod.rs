@@ -5,9 +5,7 @@
 //! - [`image_writer`] → `OutputStage`
 
 pub mod config;
-/// Sistema de leitura de imagens do disco.
 pub mod image_reader;
-/// Sistema de escrita de frames em disco.
 pub mod image_writer;
 
 use std::path::PathBuf;

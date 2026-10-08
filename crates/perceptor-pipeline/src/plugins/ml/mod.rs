@@ -8,9 +8,9 @@
 //! | `gpu`        | `wgpu`       | WebGPU compute       |
 //!
 //! # Design
-//! O [`InferenceSystem`] recebe um `Model` como recurso e itera sobre
-//! frames com [`SobelTag`] (ou qualquer predicado), rodando inferência
-//! e anexando um componente [`Prediction`] à entidade.
+//! O [`inference_system`] recebe um `Model` como recurso e itera sobre
+//! frames com [`SobelTag`](crate::plugins::filters::sobel::SobelTag) (ou qualquer predicado), rodando inferência
+//! e anexando um componente [`Prediction`](inference::Prediction) à entidade.
 
 pub mod inference;
 

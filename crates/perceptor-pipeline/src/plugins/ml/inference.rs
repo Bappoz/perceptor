@@ -42,7 +42,7 @@ pub struct Prediction {
 
 /// Sistema ECS: roda inferência ML sobre frames disponíveis.
 ///
-/// Registrado no `PostProcessStage` pelo [`MlPlugin`].
+/// Registrado no `PostProcessStage` pelo [`MlPlugin`](crate::plugins::ml::MlPlugin).
 pub fn inference_system(
     query: Query<(Entity, &Frame)>,
     config: Option<Res<ModelConfig>>,

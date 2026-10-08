@@ -42,7 +42,7 @@ pub struct SobelMap {
 /// Sistema ECS: computa o mapa de bordas Sobel para frames grayscale.
 ///
 /// Requer [`GrayscaleTag`] — só processa frames já convertidos para cinza.
-/// Registrado no `ProcessStage` pelo [`FiltersPlugin`].
+/// Registrado no `ProcessStage` pelo [`FiltersPlugin`](crate::plugins::filters::FiltersPlugin).
 pub fn sobel_system(
     query: Query<(Entity, &Frame), (With<GrayscaleTag>, Without<SobelTag>)>,
     mut commands: Commands,
