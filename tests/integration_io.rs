@@ -1,10 +1,8 @@
 //! Testes de integração: leitura e escrita de imagens via IoPlugin.
 
-use perceptor::{
-    core::{
-        frame::Frame,
-        pipeline::{Pipeline, PipelineState},
-    },
+use perceptor::pipeline::{
+    frame::Frame,
+    pipeline::{Pipeline, PipelineState},
     plugins::io::IoPlugin,
 };
 

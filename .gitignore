@@ -48,4 +48,4 @@ __pycache__/
 .env.local
 
 .claude
-src/tests/fixtures/output.png
+crates/perceptor-pipeline/src/tests/fixtures/output.png

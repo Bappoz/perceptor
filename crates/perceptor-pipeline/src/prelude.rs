@@ -3,7 +3,7 @@
 //! Importe tudo com `use perceptor::prelude::*;`
 
 // Core
-pub use crate::core::{
+pub use crate::{
     frame::Frame,
     pipeline::{Pipeline, PipelineBuilder},
     schedule::{InputStage, OutputStage, ProcessStage},

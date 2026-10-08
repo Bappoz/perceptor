@@ -1269,15 +1269,39 @@ name = "perceptor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bevy_ecs",
  "criterion",
  "image",
+ "perceptor-core",
+ "perceptor-imgproc",
+ "perceptor-pipeline",
+ "wgpu",
+]
+
+[[package]]
+name = "perceptor-core"
+version = "0.1.0"
+
+[[package]]
+name = "perceptor-imgproc"
+version = "0.1.0"
+dependencies = [
  "ndarray",
  "rayon",
+]
+
+[[package]]
+name = "perceptor-pipeline"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bevy_ecs",
+ "image",
+ "ndarray",
+ "perceptor-core",
+ "perceptor-imgproc",
  "thiserror 2.0.18",
  "tracing",
  "tracing-subscriber",
- "wgpu",
 ]
 
 [[package]]

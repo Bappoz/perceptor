@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::plugins::filters::grayscale::{convert_to_gray, grayscale_system, GrayscaleTag};
+    use crate::plugins::filters::grayscale::{grayscale_system, GrayscaleTag};
     use ndarray::Array3;
+    use perceptor_imgproc::grayscale::convert_to_gray;
 
     #[test]
     fn white_pixel() {
@@ -36,7 +37,7 @@ mod tests {
 
     #[test]
     fn grayscale_system_tags_entity() {
-        use crate::core::frame::{Frame, FrameMeta};
+        use crate::frame::{Frame, FrameMeta};
         use bevy_ecs::world::World;
 
         let mut world = World::new();

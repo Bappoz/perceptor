@@ -12,7 +12,7 @@
 use bevy_ecs::prelude::*;
 use tracing::{info, warn};
 
-use crate::core::frame::{Frame, FrameMeta};
+use crate::frame::{Frame, FrameMeta};
 use crate::plugins::io::IoConfig;
 
 /// Sistema ECS: lê um frame da fonte configurada e o spawna como entidade.
@@ -20,7 +20,7 @@ use crate::plugins::io::IoConfig;
 pub fn image_reader_system(
     mut commands: Commands,
     mut config: ResMut<IoConfig>,
-    mut state: ResMut<crate::core::pipeline::PipelineState>,
+    mut state: ResMut<crate::pipeline::PipelineState>,
 ) {
     if config.input_path.as_os_str().is_empty() {
         warn!("image_reader_system: IoConfig.source não configurado, pulando tick");

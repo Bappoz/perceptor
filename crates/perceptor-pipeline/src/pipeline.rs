@@ -9,7 +9,7 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
 use tracing::{debug, info};
 
-use crate::core::{
+use crate::{
     plugin::Plugin,
     schedule::{InputStage, OutputStage, PostProcessStage, PreProcessStage, ProcessStage},
 };

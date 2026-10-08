@@ -13,7 +13,8 @@ use std::path::PathBuf;
 use bevy_ecs::prelude::*;
 
 use crate::{
-    core::{pipeline::PipelineBuilder, plugin::Plugin},
+    pipeline::PipelineBuilder,
+    plugin::Plugin,
     plugins::io::{config::ImageFormat, image_writer::image_writer_system},
 };
 use image_reader::image_reader_system;

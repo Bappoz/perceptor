@@ -14,75 +14,22 @@
 //! ```
 //!
 //! # Pré-requisito
-//! O frame **deve** ser grayscale (1 canal). Use `grayscale_system` antes
-//! ou adicione filtros com `.before()`/`.after()` no schedule.
-//!
+//! A entrada **deve** ser grayscale (1 canal).
 
-use bevy_ecs::prelude::*;
+use ndarray::Array3;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use tracing::trace;
 
-use crate::core::frame::Frame;
-use crate::plugins::filters::grayscale::GrayscaleTag;
-
-/// Componente marcador: indica que bordas Sobel foram computadas para este frame.
-#[derive(Component, Debug, Default)]
-pub struct SobelTag;
-
-/// Componente que armazena o mapa de bordas Sobel separado do frame original.
-///
-/// Mantemos separado para não destruir o frame grayscale — outros sistemas
-/// podem precisar dos dados originais.
-#[derive(Component, Debug)]
-pub struct SobelMap {
-    /// Magnitude do gradiente `[H, W, 1]`, valores `u8` em `[0, 255]`.
-    pub magnitude: ndarray::Array3<u8>,
-}
-
-/// Sistema ECS: computa o mapa de bordas Sobel para frames grayscale.
-///
-/// Requer [`GrayscaleTag`] — só processa frames já convertidos para cinza.
-/// Registrado no `ProcessStage` pelo [`FiltersPlugin`].
-pub fn sobel_system(
-    mut query: Query<(Entity, &Frame), (With<GrayscaleTag>, Without<SobelTag>)>,
-    mut commands: Commands,
-) {
-    for (entity, frame) in query.iter() {
-        if frame.channels() != 1 {
-            continue;
-        }
-
-        trace!(
-            entity = ?entity,
-            index = frame.meta.index,
-            "sobel_system: computando bordas {}x{}",
-            frame.height(),
-            frame.width()
-        );
-
-        let magnitude = apply_sobel(&frame.data);
-
-        commands
-            .entity(entity)
-            .insert((SobelMap { magnitude }, SobelTag));
-    }
-}
-
-// ── Kernels e convolução (implementar aqui) ────────────────────────────────────
 
 /// Kernels do operador Sobel 3×3.
-#[allow(dead_code)]
 const KERNEL_GX: [[i8; 3]; 3] = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
 
-#[allow(dead_code)]
 const KERNEL_GY: [[i8; 3]; 3] = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
 
 /// Aplica os kernels Sobel e retorna a magnitude do gradiente `[H, W, 1]`.
 ///
 /// # Panics
 /// Panic se `input.shape()[2] != 1` (deve ser grayscale).
-#[allow(dead_code)]
-fn apply_sobel(input: &ndarray::Array3<u8>) -> ndarray::Array3<u8> {
+pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8> {
     assert_eq!(
         input.shape()[2],
         1,
@@ -138,7 +85,7 @@ fn apply_sobel(input: &ndarray::Array3<u8>) -> ndarray::Array3<u8> {
         })
         .collect();
 
-    ndarray::Array3::from_shape_vec((h, w, 1), flat)
+    Array3::from_shape_vec((h, w, 1), flat)
         .expect("shape deve ser compatível com o número de pixels")
 }
 
@@ -150,7 +97,7 @@ mod tests {
     fn uniform_image_produces_zero_output() {
         // Imagem uniforme → gradiente zero em todo pixel interior
         // (bordas com zero-padding terão resposta, mas pixels internos = 0)
-        let input = ndarray::Array3::from_elem((5, 5, 1), 128u8);
+        let input = Array3::from_elem((5, 5, 1), 128u8);
         let out = apply_sobel(&input);
         assert_eq!(out.shape(), &[5, 5, 1]);
         // Pixels internos (longe das bordas do zero-padding) devem ser 0
@@ -172,7 +119,7 @@ mod tests {
                 flat[y * w + x] = 255;
             }
         }
-        let input = ndarray::Array3::from_shape_vec((h, w, 1), flat).unwrap();
+        let input = Array3::from_shape_vec((h, w, 1), flat).unwrap();
         let out = apply_sobel(&input);
 
         let row = h / 2;
@@ -187,7 +134,7 @@ mod tests {
 
     #[test]
     fn output_shape_matches_input() {
-        let input = ndarray::Array3::from_elem((7, 13, 1), 42u8);
+        let input = Array3::from_elem((7, 13, 1), 42u8);
         let out = apply_sobel(&input);
         assert_eq!(out.shape(), &[7, 13, 1]);
     }
@@ -195,7 +142,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Sobel requer frame grayscale")]
     fn panics_on_rgb_input() {
-        let input = ndarray::Array3::from_elem((4, 4, 3), 0u8);
+        let input = Array3::from_elem((4, 4, 3), 0u8);
         apply_sobel(&input);
     }
 }

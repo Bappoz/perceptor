@@ -15,7 +15,7 @@
 pub mod grayscale;
 pub mod sobel;
 
-use crate::core::{pipeline::PipelineBuilder, plugin::Plugin};
+use crate::{pipeline::PipelineBuilder, plugin::Plugin};
 use grayscale::grayscale_system;
 use sobel::sobel_system;
 

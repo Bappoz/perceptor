@@ -1,5 +1,6 @@
 use crate::{
-    core::{frame::Frame, pipeline::PipelineState},
+    frame::Frame,
+    pipeline::PipelineState,
     plugins::io::{config::ImageFormat, IoConfig},
 };
 use bevy_ecs::system::{Query, Res, ResMut};

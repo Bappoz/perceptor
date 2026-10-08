@@ -1,40 +1,54 @@
 [workspace]
-members = ["."]
+members = [".", "crates/*"]
 resolver = "2"
 
-[package]
-name = "perceptor"
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
-description = "Modular computer vision pipeline library built on ECS"
 license = "MIT"
 repository = "https://github.com/Bappoz/perceptor"
-keywords = ["computer-vision", "ecs", "image-processing", "pipeline"]
-categories = ["multimedia::images", "science"]
 
-[lib]
-name = "perceptor"
-path = "src/lib.rs"
+[workspace.dependencies]
+perceptor-core = { path = "crates/perceptor-core", version = "0.1.0" }
+perceptor-imgproc = { path = "crates/perceptor-imgproc", version = "0.1.0" }
+perceptor-pipeline = { path = "crates/perceptor-pipeline", version = "0.1.0" }
 
-[dependencies]
-# ECS engine — core do pipeline
+# ECS engine — orquestração do pipeline
 bevy_ecs = "0.15"
-
 # Tensores e processamento numérico
 ndarray = { version = "0.15", features = ["rayon"] }
-
 # I/O de imagens
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "bmp"] }
-
 # Paralelismo data-parallel
 rayon = "1.10"
-
 # Tratamento de erros
 anyhow = "1.0"
 thiserror = "2.0"
-
 # Logging/tracing estruturado
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[workspace.lints.rust]
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+
+[package]
+name = "perceptor"
+description = "Modular computer vision pipeline library built on ECS"
+keywords = ["computer-vision", "ecs", "image-processing", "pipeline"]
+categories = ["multimedia::images", "science"]
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+perceptor-core.workspace = true
+perceptor-imgproc.workspace = true
+perceptor-pipeline.workspace = true
 
 # GPU acceleration (opcional, ativado com feature `gpu`)
 [dependencies.wgpu]
@@ -42,15 +56,14 @@ version = "22"
 optional = true
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow.workspace = true
+criterion.workspace = true
+image.workspace = true
 
 [features]
 default = []
 gpu = ["dep:wgpu"]      # Aceleração via wgpu (WebGPU/Vulkan/Metal)
 ml  = []                # Marcador para habilitar plugins ML (tch-rs / ort)
 
-# [[bench]]
-# name = "pipeline_bench"
-# harness = false
-# Descomentar quando criar benches/pipeline_bench.rs (Fase 1)
+[lints]
+workspace = true
