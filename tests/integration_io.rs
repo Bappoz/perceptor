@@ -1,4 +1,4 @@
-//! Testes de integração: leitura e escrita de imagens via IoPlugin.
+//! Testes de integração: leitura e escrita de imagens via `IoPlugin`.
 
 use perceptor::pipeline::{
     frame::Frame,
@@ -9,7 +9,11 @@ use perceptor::pipeline::{
 fn create_test_png(path: &std::path::Path, width: u32, height: u32) {
     let mut img = image::RgbImage::new(width, height);
     for (x, y, pixel) in img.enumerate_pixels_mut() {
-        *pixel = image::Rgb([(x * 40) as u8, (y * 30) as u8, 100u8]);
+        *pixel = image::Rgb([
+            u8::try_from(x * 40).unwrap(),
+            u8::try_from(y * 30).unwrap(),
+            100u8,
+        ]);
     }
     img.save(path).unwrap();
 }
@@ -41,7 +45,7 @@ fn reads_image_and_spawns_frame_entity() {
     assert_eq!(frames[0].width(), 4);
 }
 
-/// Verifica que path inválido define should_stop=true e não spawna frames.
+/// Verifica que path inválido define `should_stop=true` e não spawna frames.
 #[test]
 fn sets_should_stop_on_invalid_path() {
     let tmp = tempfile::tempdir().unwrap();

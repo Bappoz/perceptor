@@ -44,7 +44,7 @@ pub struct SobelMap {
 /// Requer [`GrayscaleTag`] — só processa frames já convertidos para cinza.
 /// Registrado no `ProcessStage` pelo [`FiltersPlugin`].
 pub fn sobel_system(
-    mut query: Query<(Entity, &Frame), (With<GrayscaleTag>, Without<SobelTag>)>,
+    query: Query<(Entity, &Frame), (With<GrayscaleTag>, Without<SobelTag>)>,
     mut commands: Commands,
 ) {
     for (entity, frame) in query.iter() {

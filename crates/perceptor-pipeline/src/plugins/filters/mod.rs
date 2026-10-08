@@ -3,8 +3,8 @@
 //! # Sistemas disponíveis
 //! | Sistema            | Stage          | Descrição                        |
 //! |--------------------|----------------|----------------------------------|
-//! | `grayscale_system` | ProcessStage   | RGB → Luminância (BT.601)        |
-//! | `sobel_system`     | ProcessStage   | Detecção de bordas (Sobel 3×3)   |
+//! | `grayscale_system` | `ProcessStage`   | RGB → Luminância (BT.601)        |
+//! | `sobel_system`     | `ProcessStage`   | Detecção de bordas (Sobel 3×3)   |
 //!
 //! # Adicionando filtros customizados
 //! Implemente uma função com assinatura de sistema ECS e registre-a:
@@ -21,16 +21,19 @@ use sobel::sobel_system;
 
 /// Plugin que registra os filtros clássicos no `ProcessStage`.
 ///
-/// Por padrão habilita grayscale e Sobel. Use [`FiltersPlugin::none`]
-/// para registrar apenas os filtros desejados manualmente.
+/// `Default` não habilita nenhum filtro (equivale a [`FiltersPlugin::none`]);
+/// use [`FiltersPlugin::all`] para habilitar grayscale e Sobel.
 #[derive(Debug, Default)]
 pub struct FiltersPlugin {
+    /// Registra `grayscale_system` no `ProcessStage`.
     pub enable_grayscale: bool,
+    /// Registra `sobel_system` no `ProcessStage`.
     pub enable_sobel: bool,
 }
 
 impl FiltersPlugin {
     /// Habilita todos os filtros disponíveis.
+    #[must_use]
     pub fn all() -> Self {
         Self {
             enable_grayscale: true,
@@ -39,13 +42,14 @@ impl FiltersPlugin {
     }
 
     /// Sem filtros pré-habilitados (configure manualmente).
+    #[must_use]
     pub fn none() -> Self {
         Self::default()
     }
 }
 
 impl Plugin for FiltersPlugin {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "FiltersPlugin"
     }
 

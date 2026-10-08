@@ -1,8 +1,8 @@
 //! Testes de integração: pipeline completo de filtros e I/O.
 //!
-//! Nota: grayscale_system e sobel_system compartilham o ProcessStage, mas os
-//! comandos ECS são flushed ao final do schedule. O GrayscaleTag inserido pelo
-//! grayscale_system só é visível ao sobel_system no tick seguinte.
+//! Nota: `grayscale_system` e `sobel_system` compartilham o `ProcessStage`, mas os
+//! comandos ECS são flushed ao final do schedule. O `GrayscaleTag` inserido pelo
+//! `grayscale_system` só é visível ao `sobel_system` no tick seguinte.
 
 use perceptor::{
     pipeline::{
@@ -27,7 +27,7 @@ fn create_edge_png(path: &std::path::Path) {
     img.save(path).unwrap();
 }
 
-/// Pipeline com IoPlugin: lê PNG → grayscale → escreve arquivo de saída em 1 tick.
+/// Pipeline com `IoPlugin`: lê PNG → grayscale → escreve arquivo de saída em 1 tick.
 #[test]
 fn io_pipeline_writes_grayscale_output() {
     let tmp = tempfile::tempdir().unwrap();

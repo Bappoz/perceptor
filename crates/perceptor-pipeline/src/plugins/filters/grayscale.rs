@@ -29,7 +29,7 @@ pub fn grayscale_system(
     mut query: Query<(Entity, &mut Frame), Without<GrayscaleTag>>,
     mut commands: Commands,
 ) {
-    for (entity, mut frame) in query.iter_mut() {
+    for (entity, mut frame) in &mut query {
         if frame.channels() != 3 {
             continue; // Ignora frames que não são RGB
         }

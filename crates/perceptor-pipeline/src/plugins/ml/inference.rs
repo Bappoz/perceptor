@@ -8,7 +8,7 @@
 //!
 //! # TODO: escolher backend
 //! - **ONNX Runtime** (`ort`): melhor portabilidade, CPU/GPU.
-//! - **tch-rs**: TorchScript nativo, ótimo para modelos PyTorch.
+//! - **tch-rs**: `TorchScript` nativo, ótimo para modelos `PyTorch`.
 //! - Adicione a dependência escolhida em `Cargo.toml` com feature `ml`.
 
 use bevy_ecs::prelude::*;

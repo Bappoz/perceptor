@@ -10,6 +10,9 @@
 //! esta crate apenas os conecta ao `World`.
 
 #![allow(clippy::module_name_repetitions)]
+// Parâmetros de sistema ECS (`Query`, `Res`, `Commands`) são sempre recebidos por valor
+// e filtros de query são tuplas aninhadas por construção.
+#![allow(clippy::needless_pass_by_value, clippy::type_complexity)]
 
 pub mod frame;
 pub mod pipeline;

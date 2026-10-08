@@ -9,10 +9,13 @@
 use ndarray::Array3;
 use rayon::prelude::*;
 
+use crate::f32_to_u8;
+
 /// Converte tensor RGB `[H, W, 3]` para luminância `[H, W, 1]`.
 ///
 /// # Panics
 /// Panic se `input.shape()[2] != 3`.
+#[must_use]
 pub fn convert_to_gray(input: &Array3<u8>) -> Array3<u8> {
     assert_eq!(input.shape()[2], 3, "esperado tensor RGB [H, W, 3]");
     let h = input.shape()[0];
@@ -22,7 +25,11 @@ pub fn convert_to_gray(input: &Array3<u8>) -> Array3<u8> {
         .as_slice()
         .expect("convert_to_gray: array não é contíguo")
         .par_chunks(3)
-        .map(|px| (0.299 * px[0] as f32 + 0.587 * px[1] as f32 + 0.114 * px[2] as f32) as u8)
+        .map(|px| {
+            f32_to_u8(
+                0.299 * f32::from(px[0]) + 0.587 * f32::from(px[1]) + 0.114 * f32::from(px[2]),
+            )
+        })
         .collect();
 
     Array3::from_shape_vec((h, w, 1), flat).expect("convert_to_gray: shape inválido")
@@ -53,7 +60,7 @@ mod tests {
         let mut input = Array3::zeros((1, 1, 3));
         input[[0, 0, 0]] = 255;
         let out = convert_to_gray(&input);
-        assert_eq!(out[[0, 0, 0]], (0.299f32 * 255.0) as u8); // 76
+        assert_eq!(out[[0, 0, 0]], 76);
     }
 
     #[test]

@@ -28,7 +28,7 @@ pub struct MlPlugin {
 }
 
 impl Plugin for MlPlugin {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "MlPlugin"
     }
 

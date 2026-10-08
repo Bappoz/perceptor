@@ -19,15 +19,21 @@
 use ndarray::Array3;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
+use crate::f32_to_u8;
+
 /// Kernels do operador Sobel 3×3.
 const KERNEL_GX: [[i8; 3]; 3] = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
 
 const KERNEL_GY: [[i8; 3]; 3] = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
 
+/// Deslocamento de cada linha/coluna do kernel em relação ao pixel central.
+const OFFSETS: [isize; 3] = [-1, 0, 1];
+
 /// Aplica os kernels Sobel e retorna a magnitude do gradiente `[H, W, 1]`.
 ///
 /// # Panics
 /// Panic se `input.shape()[2] != 1` (deve ser grayscale).
+#[must_use]
 pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8> {
     assert_eq!(
         input.shape()[2],
@@ -39,11 +45,10 @@ pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8> {
     let src = input.as_slice().expect("input deve ser contíguo");
 
     // Retorna o valor do pixel com zero-padding para coordenadas fora dos limites.
-    let px = |y: i32, x: i32| -> i16 {
-        if y < 0 || x < 0 || y >= h as i32 || x >= w as i32 {
-            0
-        } else {
-            src[y as usize * w + x as usize] as i16
+    let px = |y: usize, dy: isize, x: usize, dx: isize| -> i16 {
+        match (y.checked_add_signed(dy), x.checked_add_signed(dx)) {
+            (Some(yy), Some(xx)) if yy < h && xx < w => i16::from(src[yy * w + xx]),
+            _ => 0,
         }
     };
 
@@ -55,30 +60,18 @@ pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8> {
                 .map(move |x| {
                     let (mut gx, mut gy) = (0i16, 0i16);
 
-                    for (dy, row_gx, row_gy) in KERNEL_GX
-                        .iter()
-                        .zip(KERNEL_GY.iter())
-                        .enumerate()
-                        .map(|(i, (&rx, &ry))| (i as i32 - 1, rx, ry))
-                    {
-                        for (dx, kx, ky) in row_gx
-                            .iter()
-                            .zip(row_gy.iter())
-                            .enumerate()
-                            .map(|(j, (&kx, &ky))| (j as i32 - 1, kx, ky))
-                        {
-                            let p = px(y as i32 + dy, x as i32 + dx) as i16;
-                            gx += p * i16::from(kx);
-                            gy += p * i16::from(ky);
+                    for (i, &dy) in OFFSETS.iter().enumerate() {
+                        for (j, &dx) in OFFSETS.iter().enumerate() {
+                            let p = px(y, dy, x, dx);
+                            gx += p * i16::from(KERNEL_GX[i][j]);
+                            gy += p * i16::from(KERNEL_GY[i][j]);
                         }
                     }
 
-                    // Magnitude do gradiente: sqrt(gx² + gy²), normalizada para [0, 255].
-                    // Cast para i32 antes de elevar ao quadrado: i16² pode ultrapassar i16::MAX.
-                    let mag = ((i32::from(gx) * i32::from(gx) + i32::from(gy) * i32::from(gy))
-                        as f32)
-                        .sqrt();
-                    mag.min(255.0) as u8
+                    // Magnitude do gradiente: sqrt(gx² + gy²), saturada em [0, 255].
+                    // |gx|, |gy| ≤ 4·255, então os quadrados são exatos em f32.
+                    let (gx, gy) = (f32::from(gx), f32::from(gy));
+                    f32_to_u8((gx * gx + gy * gy).sqrt())
                 })
                 .collect::<Vec<u8>>()
         })
@@ -142,6 +135,6 @@ mod tests {
     #[should_panic(expected = "Sobel requer frame grayscale")]
     fn panics_on_rgb_input() {
         let input = Array3::from_elem((4, 4, 3), 0u8);
-        apply_sobel(&input);
+        let _ = apply_sobel(&input);
     }
 }
