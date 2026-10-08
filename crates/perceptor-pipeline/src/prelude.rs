@@ -6,16 +6,12 @@
 pub use crate::{
     frame::Frame,
     pipeline::{Pipeline, PipelineBuilder},
-    schedule::{InputStage, OutputStage, ProcessStage},
     plugin::Plugin,
+    schedule::{InputStage, OutputStage, ProcessStage},
 };
 
 // Plugins prontos para uso
-pub use crate::plugins::{
-    filters::FiltersPlugin,
-    io::IoPlugin,
-    ml::MlPlugin,
-};
+pub use crate::plugins::{filters::FiltersPlugin, io::IoPlugin, ml::MlPlugin};
 
 // Re-exports de crates externas frequentemente necessários
 pub use anyhow::{Context, Result};

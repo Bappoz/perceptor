@@ -9,7 +9,6 @@
 use ndarray::Array3;
 use rayon::prelude::*;
 
-
 /// Converte tensor RGB `[H, W, 3]` para luminância `[H, W, 1]`.
 ///
 /// # Panics

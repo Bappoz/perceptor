@@ -19,7 +19,6 @@
 use ndarray::Array3;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-
 /// Kernels do operador Sobel 3×3.
 const KERNEL_GX: [[i8; 3]; 3] = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
 
@@ -76,8 +75,8 @@ pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8> {
 
                     // Magnitude do gradiente: sqrt(gx² + gy²), normalizada para [0, 255].
                     // Cast para i32 antes de elevar ao quadrado: i16² pode ultrapassar i16::MAX.
-                    let mag = ((i32::from(gx) * i32::from(gx)
-                        + i32::from(gy) * i32::from(gy)) as f32)
+                    let mag = ((i32::from(gx) * i32::from(gx) + i32::from(gy) * i32::from(gy))
+                        as f32)
                         .sqrt();
                     mag.min(255.0) as u8
                 })

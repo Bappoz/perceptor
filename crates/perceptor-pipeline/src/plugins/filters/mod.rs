@@ -32,7 +32,10 @@ pub struct FiltersPlugin {
 impl FiltersPlugin {
     /// Habilita todos os filtros disponíveis.
     pub fn all() -> Self {
-        Self { enable_grayscale: true, enable_sobel: true }
+        Self {
+            enable_grayscale: true,
+            enable_sobel: true,
+        }
     }
 
     /// Sem filtros pré-habilitados (configure manualmente).
@@ -42,7 +45,9 @@ impl FiltersPlugin {
 }
 
 impl Plugin for FiltersPlugin {
-    fn name(&self) -> &str { "FiltersPlugin" }
+    fn name(&self) -> &str {
+        "FiltersPlugin"
+    }
 
     fn build(&self, builder: &mut PipelineBuilder) {
         if self.enable_grayscale {

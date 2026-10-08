@@ -34,7 +34,14 @@ pub fn image_writer_system(
             image::ColorType::Rgb8
         };
 
-        match image::save_buffer_with_format(&config.output_path, raw, w as u32, h as u32, color, img_format) {
+        match image::save_buffer_with_format(
+            &config.output_path,
+            raw,
+            w as u32,
+            h as u32,
+            color,
+            img_format,
+        ) {
             Ok(_) => info!("image_writer_system: salvo em {:?}", config.output_path),
             Err(e) => warn!("image_writer_system: falha ao salvar: {e}"),
         }

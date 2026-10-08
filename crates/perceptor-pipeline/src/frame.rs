@@ -55,11 +55,8 @@ impl Frame {
     pub fn from_dynamic_image(meta: FrameMeta, img: DynamicImage) -> Self {
         let rgb = img.into_rgb8();
         let (w, h) = rgb.dimensions();
-        let data = Array3::from_shape_vec(
-            (h as usize, w as usize, 3),
-            rgb.into_raw(),
-        )
-        .expect("conversão DynamicImage→Array3 falhou: shape inválido");
+        let data = Array3::from_shape_vec((h as usize, w as usize, 3), rgb.into_raw())
+            .expect("conversão DynamicImage→Array3 falhou: shape inválido");
         Self::new(meta, data)
     }
 
@@ -67,20 +64,25 @@ impl Frame {
     pub fn from_dynamic_image_rgba(meta: FrameMeta, img: DynamicImage) -> Self {
         let rgba = img.into_rgba8();
         let (w, h) = rgba.dimensions();
-        let data = Array3::from_shape_vec(
-            (h as usize, w as usize, 4),
-            rgba.into_raw(),
-        )
-        .expect("conversão DynamicImage→Array3 RGBA falhou");
+        let data = Array3::from_shape_vec((h as usize, w as usize, 4), rgba.into_raw())
+            .expect("conversão DynamicImage→Array3 RGBA falhou");
         Self::new(meta, data)
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
 
-    pub fn height(&self) -> usize   { self.data.shape()[0] }
-    pub fn width(&self) -> usize    { self.data.shape()[1] }
-    pub fn channels(&self) -> usize { self.data.shape()[2] }
+    pub fn height(&self) -> usize {
+        self.data.shape()[0]
+    }
+    pub fn width(&self) -> usize {
+        self.data.shape()[1]
+    }
+    pub fn channels(&self) -> usize {
+        self.data.shape()[2]
+    }
 
     /// Retorna `true` se o frame é grayscale (1 canal).
-    pub fn is_grayscale(&self) -> bool { self.channels() == 1 }
+    pub fn is_grayscale(&self) -> bool {
+        self.channels() == 1
+    }
 }

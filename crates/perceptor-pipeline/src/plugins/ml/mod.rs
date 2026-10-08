@@ -28,7 +28,9 @@ pub struct MlPlugin {
 }
 
 impl Plugin for MlPlugin {
-    fn name(&self) -> &str { "MlPlugin" }
+    fn name(&self) -> &str {
+        "MlPlugin"
+    }
 
     fn build(&self, builder: &mut PipelineBuilder) {
         builder.add_post_process_system(inference_system);
