@@ -47,3 +47,33 @@ pub fn grayscale_system(
         commands.entity(entity).insert(GrayscaleTag);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frame::FrameMeta;
+    use ndarray::Array3;
+
+    #[test]
+    fn grayscale_system_tags_entity() {
+        let mut world = World::new();
+
+        let meta = FrameMeta {
+            index: 0,
+            timestamp_us: 0,
+            source: "test".into(),
+        };
+        let data = Array3::from_elem((2, 2, 3), 200u8);
+        world.spawn(Frame::new(meta, data));
+
+        // Roda o sistema diretamente no world
+        let mut schedule = Schedule::default();
+        schedule.add_systems(grayscale_system);
+        schedule.run(&mut world);
+
+        // Verifica tag + shape do frame convertido
+        let mut q = world.query::<(&Frame, &GrayscaleTag)>();
+        let (frame, _) = q.single(&world);
+        assert_eq!(frame.channels(), 1);
+    }
+}
