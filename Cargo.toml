@@ -7,6 +7,8 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/Bappoz/perceptor"
+# Piso imposto pelas dependências (image 0.25.10 exige 1.88)
+rust-version = "1.88"
 
 [workspace.dependencies]
 perceptor-core = { path = "crates/perceptor-core", version = "0.1.0" }
@@ -44,6 +46,7 @@ keywords = ["computer-vision", "ecs", "image-processing", "pipeline"]
 categories = ["multimedia::images", "science"]
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
