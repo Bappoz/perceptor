@@ -8,5 +8,9 @@
 #![forbid(unsafe_code)]
 
 mod error;
+mod pixel;
 
 pub use error::{BoxError, Error, Result};
+pub use pixel::{
+    Bgr8, La8, Pixel, PixelFormat, Rgb8, RgbF32, Rgba8, SampleType, Subpixel, L16, L8, LF32,
+};

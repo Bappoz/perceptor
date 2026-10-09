@@ -31,6 +31,15 @@ pub enum Error {
         channels: usize,
     },
 
+    /// O comprimento do buffer não corresponde a um número inteiro de pixels.
+    #[error("buffer com {len} valores não é múltiplo de {channels} canal(is)")]
+    BufferLength {
+        /// Número de subpixels no buffer.
+        len: usize,
+        /// Canais por pixel do formato pedido.
+        channels: usize,
+    },
+
     /// O buffer não está em memória contígua em ordem de linha.
     #[error("buffer de imagem não é contíguo em ordem de linha")]
     NonContiguous,
@@ -107,6 +116,18 @@ mod tests {
     fn unsupported_channels_reports_count() {
         let err = Error::UnsupportedChannels { channels: 2 };
         assert_eq!(err.to_string(), "número de canais não suportado: 2");
+    }
+
+    #[test]
+    fn buffer_length_reports_len_and_channels() {
+        let err = Error::BufferLength {
+            len: 7,
+            channels: 3,
+        };
+        assert_eq!(
+            err.to_string(),
+            "buffer com 7 valores não é múltiplo de 3 canal(is)"
+        );
     }
 
     #[test]
