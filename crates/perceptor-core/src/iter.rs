@@ -12,7 +12,6 @@ use crate::{Image, ImageView, ImageViewMut, Pixel};
 
 impl<'a, P: Pixel> ImageView<'a, P> {
     /// Linhas de cima para baixo.
-    #[must_use]
     pub fn rows(&self) -> impl ExactSizeIterator<Item = &'a [P]> + DoubleEndedIterator + Clone {
         let row_len = self.geometry.row_len();
         self.data
@@ -111,7 +110,6 @@ impl<P: Pixel> ImageViewMut<'_, P> {
 
 impl<P: Pixel> Image<P> {
     /// Linhas de cima para baixo.
-    #[must_use]
     pub fn rows(&self) -> impl ExactSizeIterator<Item = &[P]> + DoubleEndedIterator + Clone {
         self.as_pixels().chunks_exact(self.width())
     }
@@ -123,7 +121,6 @@ impl<P: Pixel> Image<P> {
     }
 
     /// Pixels em ordem de linha.
-    #[must_use]
     pub fn pixels(&self) -> impl ExactSizeIterator<Item = &P> + DoubleEndedIterator + Clone {
         self.as_pixels().iter()
     }
