@@ -13,7 +13,12 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Conceitos',
       collapsed: false,
-      items: ['conceitos/arquitetura', 'conceitos/pipeline-e-stages', 'conceitos/plugins'],
+      items: [
+        'conceitos/arquitetura',
+        'conceitos/modelo-de-imagem',
+        'conceitos/pipeline-e-stages',
+        'conceitos/plugins',
+      ],
     },
     {
       type: 'category',

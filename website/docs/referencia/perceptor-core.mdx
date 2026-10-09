@@ -4,6 +4,7 @@ title: perceptor-core
 
 import CodeBlock from '@theme/CodeBlock';
 import Example from '!!raw-loader!@site/../examples/read_frame_error.rs';
+import ImageBasics from '!!raw-loader!@site/../examples/image_basics.rs';
 import PixelCast from '!!raw-loader!@site/../examples/pixel_cast.rs';
 
 # perceptor-core
@@ -59,9 +60,44 @@ Cada tipo é um wrapper `#[repr(transparent)]` sobre um array de subpixels, ent�
 
 Os casts são feitos pela crate [`bytemuck`](https://docs.rs/bytemuck), que verifica tamanho e alinhamento; `perceptor-core` continua sem nenhum `unsafe` próprio.
 
+## `Image<P>`
+
+Imagem dona do buffer: `width × height` pixels do formato `P`, em ordem de linha, em memória contígua que começa em um endereço múltiplo de 64 bytes (`Image::ALIGNMENT`).
+
+| Construtor | Conteúdo |
+|---|---|
+| `Image::new(w, h)` | todos os subpixels em zero |
+| `Image::filled(w, h, pixel)` | todos os pixels iguais |
+| `Image::from_fn(w, h, \|x, y\| ...)` | valor calculado por coordenada |
+| `Image::from_vec(w, h, vec)` / `from_pixels(w, h, &[P])` | cópia de pixels em ordem de linha |
+| `Image::from_subpixels(w, h, &[u8])` | cópia de subpixels intercalados |
+
+Todos retornam `Result`:
+
+| Erro | Condição |
+|---|---|
+| `InvalidDimensions` | largura ou altura zero, ou tamanho em bytes que não cabe em `isize` |
+| `Allocation` | o alocador não atendeu ao pedido |
+| `DimensionMismatch` | quantidade de pixels diferente de `w · h` |
+| `BufferLength` | (`from_subpixels`) comprimento que não é múltiplo dos canais |
+
+| Acesso | Retorno |
+|---|---|
+| `width()`, `height()`, `dimensions()`, `stride()` | geometria; em `Image` o stride é igual à largura |
+| `as_pixels()` / `as_pixels_mut()` | `&[P]` com todos os pixels |
+| `as_subpixels()` / `as_subpixels_mut()` | `&[P::Subpixel]` intercalado |
+| `as_bytes()` | `&[u8]` |
+| `row(y)` / `row_mut(y)` | uma linha; pânico se `y >= height` |
+| `get(x, y)` / `get_mut(x, y)` | `Option`, checando `x` e `y` separadamente |
+| `image[(x, y)]` | pânico fora dos limites |
+| `into_vec()` | `Vec<P>` em ordem de linha |
+
+<CodeBlock language="rust" title="examples/image_basics.rs">{ImageBasics}</CodeBlock>
+
+`from_vec` copia os pixels: um `Vec<P>` comum não garante alinhamento de 64 bytes, e adotá-lo quebraria a invariante.
+
 ## Em construção
 
 | Item | Issue |
 |---|---|
-| `Image<P>` | [#31](https://github.com/Bappoz/perceptor/issues/31) |
 | `ImageView` / `ImageViewMut` | [#32](https://github.com/Bappoz/perceptor/issues/32) |
