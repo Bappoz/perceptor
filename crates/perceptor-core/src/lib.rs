@@ -9,6 +9,7 @@
 
 mod error;
 mod image;
+mod iter;
 mod pixel;
 mod view;
 

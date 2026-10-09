@@ -795,6 +795,7 @@ dependencies = [
  "perceptor-core",
  "perceptor-imgproc",
  "perceptor-pipeline",
+ "rayon",
  "tempfile",
 ]
 
@@ -804,6 +805,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "proptest",
+ "rayon",
  "thiserror",
 ]
 

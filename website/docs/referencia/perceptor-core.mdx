@@ -6,6 +6,7 @@ import CodeBlock from '@theme/CodeBlock';
 import Example from '!!raw-loader!@site/../examples/read_frame_error.rs';
 import ImageBasics from '!!raw-loader!@site/../examples/image_basics.rs';
 import ViewsRoi from '!!raw-loader!@site/../examples/views_roi.rs';
+import ParallelRows from '!!raw-loader!@site/../examples/parallel_rows.rs';
 import PixelCast from '!!raw-loader!@site/../examples/pixel_cast.rs';
 
 # perceptor-core
@@ -141,9 +142,28 @@ O `stride` é medido em **subpixels** (para formatos `u8`, bytes) e não precisa
 
 `split_at_row` é a base do paralelismo por faixas: o verificador de empréstimos garante que as duas metades não se sobrepõem, então cada uma pode ser processada em uma thread sem `unsafe`.
 
+## Iteração
+
+Todos os iteradores respeitam o stride: o preenchimento entre linhas nunca é lido nem escrito.
+
+| Método | Disponível em | Item |
+|---|---|---|
+| `rows()` | `Image`, `ImageView` | `&[P]` |
+| `pixels()` | `Image`, `ImageView` | `&P` |
+| `enumerate_pixels()` | `Image`, `ImageView` | `(x, y, &P)` |
+| `rows_mut()`, `pixels_mut()`, `enumerate_pixels_mut()` | `Image`, `ImageViewMut` | versões mutáveis |
+| `par_rows()` | `ImageView` | `&[P]`, em paralelo |
+| `par_rows_mut()` | `Image`, `ImageViewMut` | `&mut [P]`, em paralelo |
+| `par_strips_mut(n)` | `ImageViewMut` | `(y0, ImageViewMut)`: faixas de `n` linhas |
+
+Os métodos `par_*` dependem da feature `rayon` de `perceptor-core`, ligada por padrão. Eles são iteradores indexados do rayon: `.enumerate()` devolve o índice da linha.
+
+<CodeBlock language="rust" title="examples/parallel_rows.rs">{ParallelRows}</CodeBlock>
+
+**Linha ou faixa?** Kernels pontuais (um pixel de saída depende de um pixel de entrada) usam `par_rows_mut`. Kernels com vizinhança vertical usam `par_strips_mut`, que entrega um bloco de linhas e a posição `y0` dele na imagem; faixas maiores também reduzem o custo de agendamento por tarefa.
+
 ## Em construção
 
 | Item | Issue |
 |---|---|
-| iteradores por linha e faixas paralelas | [#33](https://github.com/Bappoz/perceptor/issues/33) |
 | `BorderMode` | [#34](https://github.com/Bappoz/perceptor/issues/34) |

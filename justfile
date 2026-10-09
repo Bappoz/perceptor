@@ -17,10 +17,12 @@ fmt-check:
 # Clippy pedantic com warnings tratados como erro
 lint:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo clippy -p perceptor-core --all-targets --no-default-features -- -D warnings
 
 # Testes unitários, de integração e doctests
 test *args:
     cargo test --workspace {{ args }}
+    cargo test -q -p perceptor-core --no-default-features {{ args }}
 
 # Rustdoc com links quebrados e docs faltantes tratados como erro
 doc:
@@ -32,7 +34,12 @@ build:
 
 # Testes sob Miri (requer `rustup +nightly component add miri`)
 miri *args:
-    cargo +nightly miri test -p perceptor-core {{ args }}
+    # Stacked Borrows (modelo padrão, mais estrito) sobre o core sem rayon.
+    cargo +nightly miri test -p perceptor-core --no-default-features {{ args }}
+    # Com rayon, Tree Borrows: o crossbeam-epoch (dependência do rayon) viola
+    # Stacked Borrows internamente, fora do código deste repositório. O pool
+    # global do rayon nunca é encerrado, daí o `ignore-leaks`.
+    MIRIFLAGS="-Zmiri-tree-borrows -Zmiri-ignore-leaks" cargo +nightly miri test -p perceptor-core {{ args }}
 
 # Benchmarks criterion
 bench *args:

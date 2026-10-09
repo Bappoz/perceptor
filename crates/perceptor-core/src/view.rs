@@ -65,11 +65,11 @@ impl fmt::Display for Rect {
 
 /// Geometria validada de uma visão: toda linha `y < height` cabe no buffer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Geometry<P> {
-    width: usize,
-    height: usize,
+pub(crate) struct Geometry<P> {
+    pub(crate) width: usize,
+    pub(crate) height: usize,
     /// Subpixels entre o início de duas linhas consecutivas.
-    stride: usize,
+    pub(crate) stride: usize,
     _pixel: PhantomData<P>,
 }
 
@@ -107,13 +107,20 @@ impl<P: Pixel> Geometry<P> {
         })
     }
 
+    /// Mesma largura e stride, com outra altura. Quem chama garante que o
+    /// buffer correspondente contém as `height` linhas.
+    #[cfg(feature = "rayon")]
+    pub(crate) fn with_height(self, height: usize) -> Self {
+        Self { height, ..self }
+    }
+
     /// Subpixels ocupados por uma linha, sem preenchimento.
-    fn row_len(&self) -> usize {
+    pub(crate) fn row_len(&self) -> usize {
         self.width * P::CHANNELS
     }
 
     /// Subpixels do início da primeira linha ao fim da última.
-    fn required_len(&self) -> usize {
+    pub(crate) fn required_len(&self) -> usize {
         (self.height - 1) * self.stride + self.row_len()
     }
 
@@ -162,8 +169,8 @@ impl<P: Pixel> Geometry<P> {
 /// Visão somente leitura de uma região de imagem.
 #[derive(Debug, Clone, Copy)]
 pub struct ImageView<'a, P: Pixel> {
-    data: &'a [P::Subpixel],
-    geometry: Geometry<P>,
+    pub(crate) data: &'a [P::Subpixel],
+    pub(crate) geometry: Geometry<P>,
 }
 
 impl<'a, P: Pixel> ImageView<'a, P> {
@@ -269,8 +276,8 @@ impl<'a, P: Pixel> ImageView<'a, P> {
 /// Visão mutável e exclusiva de uma região de imagem.
 #[derive(Debug)]
 pub struct ImageViewMut<'a, P: Pixel> {
-    data: &'a mut [P::Subpixel],
-    geometry: Geometry<P>,
+    pub(crate) data: &'a mut [P::Subpixel],
+    pub(crate) geometry: Geometry<P>,
 }
 
 impl<'a, P: Pixel> ImageViewMut<'a, P> {

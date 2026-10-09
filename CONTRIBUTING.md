@@ -25,7 +25,7 @@ O CI roda os mesmos comandos, mais `just miri` (requer `rustup +nightly componen
 - **Kernels** ficam em `perceptor-imgproc` como funções puras; sistemas ECS em `perceptor-pipeline` apenas os chamam.
 - **Erros:** funções públicas retornam `perceptor_core::Result`. `unwrap`/`expect` em código de lib só com a invariante comentada.
 - **`unsafe`:** proibido fora dos módulos designados; todo bloco leva `// SAFETY:` e tem uma versão segura de referência testada contra ele.
-- **Miri:** `perceptor-core` e todo módulo com `unsafe` rodam sob Miri no CI. Teste que depende de I/O real ou é lento demais sob interpretação leva `#[cfg_attr(miri, ignore)]` com o motivo em comentário.
+- **Miri:** `perceptor-core` e todo módulo com `unsafe` rodam sob Miri no CI. O core roda duas vezes: sem `rayon` sob Stacked Borrows, e com `rayon` sob Tree Borrows (o `crossbeam-epoch` viola Stacked Borrows internamente). Teste que depende de I/O real ou é lento demais sob interpretação leva `#[cfg_attr(miri, ignore)]` com o motivo em comentário.
 - **Performance:** mudança de performance vem com benchmark antes e depois no PR.
 - **Dependências novas** precisam de justificativa no PR. Licença fora da lista de `deny.toml` exige discussão antes de entrar.
 - **Exemplos de código na documentação** são importados de `examples/`, que o CI compila; não cole trechos soltos.
