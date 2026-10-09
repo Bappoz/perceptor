@@ -1,0 +1,33 @@
+# Política da cadeia de dependências. Rodar com `just deny`.
+
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+
+[licenses]
+version = 2
+# Licenças permissivas compatíveis com a distribuição MIT do projeto.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "0BSD",
+    "Zlib",
+    "Unicode-3.0",
+]
+confidence-threshold = 0.9
+
+[bans]
+# Versões duplicadas vêm de dependências transitivas (bevy_ecs, image);
+# ficam como aviso para serem revistas a cada bump.
+multiple-versions = "warn"
+wildcards = "deny"
+# As crates do workspace referenciam umas às outras por `path`.
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
