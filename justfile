@@ -42,6 +42,10 @@ bench *args:
 cov *args:
     cargo llvm-cov --workspace {{ args }}
 
+# Licenças, advisories e fontes das dependências (requer cargo-deny)
+deny:
+    cargo deny check
+
 # Gates na ordem: format → lint → test → doc → build
 ci: fmt-check lint test doc build
 

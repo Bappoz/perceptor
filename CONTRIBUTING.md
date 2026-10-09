@@ -14,6 +14,7 @@
 just ci           # fmt-check → clippy -D warnings → test → rustdoc → build
 just docs-build   # quando tocar website/ ou examples/
 just cov          # cobertura por arquivo (requer cargo-llvm-cov)
+just deny         # ao adicionar ou atualizar dependência (requer cargo-deny)
 ```
 
 O CI roda os mesmos comandos, mais `just miri` (requer `rustup +nightly component add miri`). PR com gate vermelho não é revisado.
@@ -26,5 +27,5 @@ O CI roda os mesmos comandos, mais `just miri` (requer `rustup +nightly componen
 - **`unsafe`:** proibido fora dos módulos designados; todo bloco leva `// SAFETY:` e tem uma versão segura de referência testada contra ele.
 - **Miri:** `perceptor-core` e todo módulo com `unsafe` rodam sob Miri no CI. Teste que depende de I/O real ou é lento demais sob interpretação leva `#[cfg_attr(miri, ignore)]` com o motivo em comentário.
 - **Performance:** mudança de performance vem com benchmark antes e depois no PR.
-- **Dependências novas** precisam de justificativa no PR.
+- **Dependências novas** precisam de justificativa no PR. Licença fora da lista de `deny.toml` exige discussão antes de entrar.
 - **Exemplos de código na documentação** são importados de `examples/`, que o CI compila; não cole trechos soltos.

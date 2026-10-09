@@ -113,3 +113,10 @@ jobs:
         with:
           name: lcov
           path: lcov.info
+
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
