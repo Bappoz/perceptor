@@ -47,12 +47,12 @@ Workspace, tooling, CI, qualidade base e site de docs.
 
 Image<P>, views, formatos de pixel, bordas, pool e infra de testes.
 
-- [ ] #30 feat(core): trait Pixel e formatos L8, La8, Rgb8, Rgba8, Bgr8, L16, LF32, RgbF32
-- [ ] #31 feat(core): Image<P> — buffer contíguo alinhado a 64 bytes com stride
-- [ ] #32 feat(core): ImageView/ImageViewMut e ROI zero-copy
-- [ ] #33 feat(core): iteradores por linha/pixel e divisão paralela por faixas
-- [ ] #34 feat(core): BorderMode e acesso a pixel com borda
-- [ ] #35 feat(core): interop com as crates image e ndarray por feature
+- [x] #30 feat(core): trait Pixel e formatos L8, La8, Rgb8, Rgba8, Bgr8, L16, LF32, RgbF32
+- [x] #31 feat(core): Image<P> — buffer contíguo alinhado a 64 bytes com stride
+- [x] #32 feat(core): ImageView/ImageViewMut e ROI zero-copy
+- [x] #33 feat(core): iteradores por linha/pixel e divisão paralela por faixas
+- [x] #34 feat(core): BorderMode e acesso a pixel com borda
+- [x] #35 feat(core): interop com as crates image e ndarray por feature
 - [ ] #36 feat(core): BufferPool para reutilização de buffers por frame
 - [ ] #37 test(core): infraestrutura de proptest, golden images e geradores sintéticos
 - [ ] #38 fuzz(core): harness cargo-fuzz para construtores e conversões de Image
