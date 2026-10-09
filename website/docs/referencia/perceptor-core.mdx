@@ -7,6 +7,7 @@ import Example from '!!raw-loader!@site/../examples/read_frame_error.rs';
 import ImageBasics from '!!raw-loader!@site/../examples/image_basics.rs';
 import ViewsRoi from '!!raw-loader!@site/../examples/views_roi.rs';
 import ParallelRows from '!!raw-loader!@site/../examples/parallel_rows.rs';
+import BorderModes from '!!raw-loader!@site/../examples/border_modes.rs';
 import PixelCast from '!!raw-loader!@site/../examples/pixel_cast.rs';
 
 # perceptor-core
@@ -162,8 +163,31 @@ Os métodos `par_*` dependem da feature `rayon` de `perceptor-core`, ligada por 
 
 **Linha ou faixa?** Kernels pontuais (um pixel de saída depende de um pixel de entrada) usam `par_rows_mut`. Kernels com vizinhança vertical usam `par_strips_mut`, que entrega um bloco de linhas e a posição `y0` dele na imagem; faixas maiores também reduzem o custo de agendamento por tarefa.
 
+## Bordas: `BorderMode`
+
+Filtros espaciais precisam de vizinhos que não existem nas bordas. `BorderMode<P>` define de onde esses valores vêm; os modos e suas convenções são os do OpenCV.
+
+| Modo | `abcdefgh` estendido |
+|---|---|
+| `Constant(p)` | `pppp \| abcdefgh \| pppp` |
+| `Replicate` | `aaaa \| abcdefgh \| hhhh` |
+| `Reflect` | `dcba \| abcdefgh \| hgfe` |
+| `Reflect101` | `edcb \| abcdefgh \| gfed` |
+| `Wrap` | `efgh \| abcdefgh \| abcd` |
+
+| Item | Descrição |
+|---|---|
+| `border.map_index(index, len)` | mapeia um índice com sinal para `0..len`; `None` só em `Constant` fora dos limites ou com `len == 0` |
+| `view.get_bordered(x, y, border)` | pixel em coordenadas com sinal |
+| `view.padded_row(y, pad, border, &mut vec)` | linha `y` com `pad` pixels extrapolados de cada lado, escrita em um `Vec` reutilizável |
+
+<CodeBlock language="rust" title="examples/border_modes.rs">{BorderModes}</CodeBlock>
+
+`map_index` funciona para qualquer distância da imagem (a reflexão continua "quicando") e para qualquer comprimento de eixo, sem overflow. `padded_row` é o que os filtros separáveis usam: estende-se a linha uma vez e o laço interno roda sem nenhum teste de borda.
+
 ## Em construção
 
 | Item | Issue |
 |---|---|
-| `BorderMode` | [#34](https://github.com/Bappoz/perceptor/issues/34) |
+| interop com `image` e `ndarray` | [#35](https://github.com/Bappoz/perceptor/issues/35) |
+| `BufferPool` | [#36](https://github.com/Bappoz/perceptor/issues/36) |
