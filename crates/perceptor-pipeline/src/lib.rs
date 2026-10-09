@@ -17,7 +17,6 @@ pub mod plugin;
 pub mod plugins;
 pub mod prelude;
 pub mod schedule;
-pub mod tests;
 
 pub use frame::{Frame, FrameMeta};
 pub use pipeline::{Pipeline, PipelineBuilder, PipelineState};

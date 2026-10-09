@@ -30,10 +30,9 @@ fn create_edge_png(path: &std::path::Path) {
 /// Pipeline com IoPlugin: lê PNG → grayscale → escreve arquivo de saída em 1 tick.
 #[test]
 fn io_pipeline_writes_grayscale_output() {
-    let tmp = std::env::temp_dir().join("perceptor_pipeline_io");
-    std::fs::create_dir_all(&tmp).unwrap();
-    let input = tmp.join("input_pipeline.png");
-    let output = tmp.join("output_pipeline.png");
+    let tmp = tempfile::tempdir().unwrap();
+    let input = tmp.path().join("input_pipeline.png");
+    let output = tmp.path().join("output_pipeline.png");
     create_edge_png(&input);
 
     let mut pipeline = Pipeline::builder()

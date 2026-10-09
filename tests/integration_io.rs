@@ -17,10 +17,9 @@ fn create_test_png(path: &std::path::Path, width: u32, height: u32) {
 /// Lê uma imagem PNG e verifica que exatamente 1 entidade Frame é criada com shape correto.
 #[test]
 fn reads_image_and_spawns_frame_entity() {
-    let tmp = std::env::temp_dir().join("perceptor_io_test_read");
-    std::fs::create_dir_all(&tmp).unwrap();
-    let input = tmp.join("input.png");
-    let output = tmp.join("output_read.png");
+    let tmp = tempfile::tempdir().unwrap();
+    let input = tmp.path().join("input.png");
+    let output = tmp.path().join("output_read.png");
     create_test_png(&input, 4, 6);
 
     let mut pipeline = Pipeline::builder()
@@ -45,13 +44,12 @@ fn reads_image_and_spawns_frame_entity() {
 /// Verifica que path inválido define should_stop=true e não spawna frames.
 #[test]
 fn sets_should_stop_on_invalid_path() {
-    let tmp = std::env::temp_dir().join("perceptor_io_test_err");
-    std::fs::create_dir_all(&tmp).unwrap();
+    let tmp = tempfile::tempdir().unwrap();
 
     let mut pipeline = Pipeline::builder()
         .add_plugin(IoPlugin {
-            input_path: tmp.join("nonexistent_xyz.png"),
-            output_path: tmp.join("output_err.png"),
+            input_path: tmp.path().join("nonexistent_xyz.png"),
+            output_path: tmp.path().join("output_err.png"),
             ..Default::default()
         })
         .build();
