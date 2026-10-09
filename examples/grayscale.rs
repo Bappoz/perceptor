@@ -7,7 +7,7 @@
 use perceptor::pipeline::plugins::{filters::FiltersPlugin, io::IoPlugin};
 use perceptor::prelude::*;
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     let mut args = std::env::args().skip(1);
     let (Some(input), Some(output)) = (args.next(), args.next()) else {
         anyhow::bail!("uso: grayscale <entrada> <saida.png>");
@@ -26,5 +26,6 @@ fn main() -> Result<()> {
         .build();
 
     // O IoPlugin lê um frame por tick e sinaliza parada após escrever a saída.
-    pipeline.run()
+    pipeline.run()?;
+    Ok(())
 }

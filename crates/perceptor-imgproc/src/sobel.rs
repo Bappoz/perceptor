@@ -17,6 +17,7 @@
 //! A entrada **deve** ser grayscale (1 canal).
 
 use ndarray::Array3;
+use perceptor_core::{Error, Result};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::f32_to_u8;
@@ -31,18 +32,22 @@ const OFFSETS: [isize; 3] = [-1, 0, 1];
 
 /// Aplica os kernels Sobel e retorna a magnitude do gradiente `[H, W, 1]`.
 ///
+/// # Errors
+/// - [`Error::ChannelMismatch`] se a entrada não tiver 1 canal.
+/// - [`Error::NonContiguous`] se o tensor não estiver em ordem de linha.
+///
 /// # Panics
-/// Panic se `input.shape()[2] != 1` (deve ser grayscale).
-#[must_use]
-pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8> {
-    assert_eq!(
-        input.shape()[2],
-        1,
-        "Sobel requer frame grayscale [H, W, 1]"
-    );
-    let (h, w) = (input.shape()[0], input.shape()[1]);
+/// Não ocorre: a saída tem exatamente um valor por pixel de entrada.
+pub fn apply_sobel(input: &Array3<u8>) -> Result<Array3<u8>> {
+    let (h, w, c) = input.dim();
+    if c != 1 {
+        return Err(Error::ChannelMismatch {
+            expected: 1,
+            actual: c,
+        });
+    }
 
-    let src = input.as_slice().expect("input deve ser contíguo");
+    let src = input.as_slice().ok_or(Error::NonContiguous)?;
 
     // Retorna o valor do pixel com zero-padding para coordenadas fora dos limites.
     let px = |y: usize, dy: isize, x: usize, dx: isize| -> i16 {
@@ -77,8 +82,7 @@ pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8> {
         })
         .collect();
 
-    Array3::from_shape_vec((h, w, 1), flat)
-        .expect("shape deve ser compatível com o número de pixels")
+    Ok(Array3::from_shape_vec((h, w, 1), flat).expect("um valor por pixel de entrada"))
 }
 
 #[cfg(test)]
@@ -90,7 +94,7 @@ mod tests {
         // Imagem uniforme → gradiente zero em todo pixel interior
         // (bordas com zero-padding terão resposta, mas pixels internos = 0)
         let input = Array3::from_elem((5, 5, 1), 128u8);
-        let out = apply_sobel(&input);
+        let out = apply_sobel(&input).unwrap();
         assert_eq!(out.shape(), &[5, 5, 1]);
         // Pixels internos (longe das bordas do zero-padding) devem ser 0
         for y in 1..4usize {
@@ -112,7 +116,7 @@ mod tests {
             }
         }
         let input = Array3::from_shape_vec((h, w, 1), flat).unwrap();
-        let out = apply_sobel(&input);
+        let out = apply_sobel(&input).unwrap();
 
         let row = h / 2;
         for x in 1..(w - 1) {
@@ -127,14 +131,19 @@ mod tests {
     #[test]
     fn output_shape_matches_input() {
         let input = Array3::from_elem((7, 13, 1), 42u8);
-        let out = apply_sobel(&input);
+        let out = apply_sobel(&input).unwrap();
         assert_eq!(out.shape(), &[7, 13, 1]);
     }
 
     #[test]
-    #[should_panic(expected = "Sobel requer frame grayscale")]
-    fn panics_on_rgb_input() {
+    fn rejects_non_grayscale_input() {
         let input = Array3::from_elem((4, 4, 3), 0u8);
-        let _ = apply_sobel(&input);
+        assert!(matches!(
+            apply_sobel(&input),
+            Err(Error::ChannelMismatch {
+                expected: 1,
+                actual: 3
+            })
+        ));
     }
 }

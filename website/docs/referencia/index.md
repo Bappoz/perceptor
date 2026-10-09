@@ -13,7 +13,7 @@ just doc
 
 | Crate | Conteúdo |
 |---|---|
-| [`perceptor-core`](./perceptor-core.md) | tipos fundamentais |
+| [`perceptor-core`](./perceptor-core.mdx) | tipos fundamentais |
 | [`perceptor-imgproc`](./perceptor-imgproc.md) | kernels de processamento |
 | [`perceptor-pipeline`](./perceptor-pipeline.md) | pipeline ECS, stages e plugins |
 

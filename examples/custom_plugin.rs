@@ -40,7 +40,7 @@ impl Plugin for InvertPlugin {
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     let mut pipeline = Pipeline::builder().add_plugin(InvertPlugin).build();
 
     let meta = FrameMeta {

@@ -6,3 +6,7 @@
 //! e não admite `unsafe`.
 
 #![forbid(unsafe_code)]
+
+mod error;
+
+pub use error::{BoxError, Error, Result};

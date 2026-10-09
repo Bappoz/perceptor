@@ -21,6 +21,7 @@ O projeto está na versão `0.1` e em desenvolvimento inicial. Hoje existem:
 | Pipeline | `Pipeline`, `PipelineBuilder`, cinco stages ordenados, trait `Plugin` |
 | I/O | leitura de uma imagem do disco e escrita em PNG/JPEG (`IoPlugin`) |
 | Filtros | escala de cinza BT.601 e Sobel 3×3 (`FiltersPlugin`) |
+| Erros | `perceptor_core::Error` tipado em kernels e I/O |
 | ML | apenas a estrutura do plugin; não há backend de inferência |
 
 Tudo o que ainda não existe está planejado no [roadmap](./projeto/roadmap.md), uma issue por incremento.

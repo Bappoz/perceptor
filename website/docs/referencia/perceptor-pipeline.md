@@ -17,6 +17,15 @@ Orquestração ECS sobre `bevy_ecs`.
 | `Frame` | componente com `meta: FrameMeta` e `data: Array3<u8>` |
 | `FrameMeta` | `index`, `timestamp_us`, `source` |
 
+## Funções de I/O
+
+| Função | Descrição |
+|---|---|
+| `read_frame(path, index) -> Result<Frame>` | decodifica uma imagem como frame RGB |
+| `write_frame(frame, path, format) -> Result<()>` | grava frames de 1, 3 ou 4 canais em PNG ou JPEG |
+
+Ambas ficam em `plugins::io` e podem ser usadas sem montar um pipeline.
+
 ## Stages
 
 `InputStage`, `PreProcessStage`, `ProcessStage`, `PostProcessStage`, `OutputStage` — ver [Pipeline e stages](../conceitos/pipeline-e-stages.md).

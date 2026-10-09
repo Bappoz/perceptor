@@ -13,7 +13,7 @@
 
 use bevy_ecs::prelude::*;
 use perceptor_imgproc::grayscale::convert_to_gray;
-use tracing::trace;
+use tracing::{trace, warn};
 
 use crate::frame::Frame;
 
@@ -42,9 +42,14 @@ pub fn grayscale_system(
             frame.width()
         );
 
-        frame.data = convert_to_gray(&frame.data);
-        // Marca o frame como processado para evitar re-processamento
-        commands.entity(entity).insert(GrayscaleTag);
+        match convert_to_gray(&frame.data) {
+            Ok(gray) => {
+                frame.data = gray;
+                // Marca o frame como processado para evitar re-processamento
+                commands.entity(entity).insert(GrayscaleTag);
+            }
+            Err(e) => warn!(entity = ?entity, "grayscale_system: {e}"),
+        }
     }
 }
 
