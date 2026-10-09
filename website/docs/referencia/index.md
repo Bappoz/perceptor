@@ -4,7 +4,7 @@ title: Referência
 
 # Referência
 
-Visão geral da API pública de cada crate. A referência completa, item a item, é o rustdoc:
+Visão geral da API pública de cada crate. A referência completa, item a item, é o [rustdoc publicado em `/api`](https://bappoz.github.io/perceptor/api/perceptor/), gerado a cada merge na branch principal. Para gerar localmente:
 
 ```bash
 just doc

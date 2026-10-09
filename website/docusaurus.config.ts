@@ -66,6 +66,7 @@ const config: Config = {
         {type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Documentação'},
         {to: '/docs/referencia', label: 'Referência', position: 'left'},
         {to: '/docs/projeto/roadmap', label: 'Roadmap', position: 'left'},
+        {href: 'https://bappoz.github.io/perceptor/api/perceptor/', label: 'API (rustdoc)', position: 'right'},
         {href: repo, label: 'GitHub', position: 'right'},
       ],
     },

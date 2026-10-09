@@ -1,0 +1,64 @@
+name: Docs
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - website/**
+      - examples/**
+      - .github/workflows/docs.yml
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: website/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: website/pnpm-lock.yaml
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - run: just docs-install
+      - run: just docs-build
+
+      # A referência de API (rustdoc) é publicada em /api junto do site.
+      - uses: dtolnay/rust-toolchain@stable
+        if: github.event_name == 'push'
+      - uses: Swatinem/rust-cache@v2
+        if: github.event_name == 'push'
+      - name: Build rustdoc into /api
+        if: github.event_name == 'push'
+        run: |
+          just doc
+          cp -r target/doc website/build/api
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'push'
+        with:
+          path: website/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
