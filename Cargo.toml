@@ -7,8 +7,8 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/Bappoz/perceptor"
-# Piso imposto pelas dependências (image 0.25.10 exige 1.88)
-rust-version = "1.88"
+# Piso imposto pelas dependências (bevy_ecs 0.20 exige 1.95)
+rust-version = "1.95"
 
 [workspace.dependencies]
 perceptor-core = { path = "crates/perceptor-core", version = "0.1.0" }
@@ -16,20 +16,19 @@ perceptor-imgproc = { path = "crates/perceptor-imgproc", version = "0.1.0" }
 perceptor-pipeline = { path = "crates/perceptor-pipeline", version = "0.1.0" }
 
 # ECS engine — orquestração do pipeline
-bevy_ecs = "0.15"
+bevy_ecs = "0.20"
 # Tensores e processamento numérico
-ndarray = { version = "0.15", features = ["rayon"] }
+ndarray = { version = "0.17", features = ["rayon"] }
 # I/O de imagens
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "bmp"] }
 # Paralelismo data-parallel
-rayon = "1.10"
+rayon = "1.12"
 # Tratamento de erros
 anyhow = "1.0"
 thiserror = "2.0"
 # Logging/tracing estruturado
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-criterion = { version = "0.5", features = ["html_reports"] }
 # Diretórios temporários em testes
 tempfile = "3"
 
@@ -55,22 +54,15 @@ perceptor-core.workspace = true
 perceptor-imgproc.workspace = true
 perceptor-pipeline.workspace = true
 
-# GPU acceleration (opcional, ativado com feature `gpu`)
-[dependencies.wgpu]
-version = "22"
-optional = true
-
 [dev-dependencies]
 anyhow.workspace = true
 # `#[derive(Component)]` nos exemplos expande para caminhos `bevy_ecs::`
 bevy_ecs.workspace = true
-criterion.workspace = true
 image.workspace = true
 tempfile.workspace = true
 
 [features]
 default = []
-gpu = ["dep:wgpu"]      # Aceleração via wgpu (WebGPU/Vulkan/Metal)
 ml  = []                # Marcador para habilitar plugins ML (tch-rs / ort)
 
 [lints]

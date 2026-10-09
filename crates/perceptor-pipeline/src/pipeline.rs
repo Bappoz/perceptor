@@ -6,6 +6,7 @@
 
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
+use bevy_ecs::system::ScheduleSystem;
 use perceptor_core::Result;
 use tracing::{debug, info};
 
@@ -133,31 +134,46 @@ impl PipelineBuilder {
     }
 
     /// Registra um sistema no `InputStage`.
-    pub fn add_input_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
+    pub fn add_input_system<M>(
+        &mut self,
+        system: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
         self.input_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `PreProcessStage`.
-    pub fn add_pre_process_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
+    pub fn add_pre_process_system<M>(
+        &mut self,
+        system: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
         self.pre_process_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `ProcessStage`.
-    pub fn add_process_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
+    pub fn add_process_system<M>(
+        &mut self,
+        system: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
         self.process_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `PostProcessStage`.
-    pub fn add_post_process_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
+    pub fn add_post_process_system<M>(
+        &mut self,
+        system: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
         self.post_process_schedule.add_systems(system);
         self
     }
 
     /// Registra um sistema no `OutputStage`.
-    pub fn add_output_system<M>(&mut self, system: impl IntoSystemConfigs<M>) -> &mut Self {
+    pub fn add_output_system<M>(
+        &mut self,
+        system: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
         self.output_schedule.add_systems(system);
         self
     }

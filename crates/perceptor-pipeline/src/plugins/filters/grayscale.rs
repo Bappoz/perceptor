@@ -78,7 +78,7 @@ mod tests {
 
         // Verifica tag + shape do frame convertido
         let mut q = world.query::<(&Frame, &GrayscaleTag)>();
-        let (frame, _) = q.single(&world);
+        let (frame, _) = q.single(&world).unwrap();
         assert_eq!(frame.channels(), 1);
     }
 }

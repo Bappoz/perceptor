@@ -54,7 +54,7 @@ fn main() -> anyhow::Result<()> {
     pipeline.tick()?;
 
     let world = pipeline.world_mut();
-    let frame = world.query::<&Frame>().single(world);
+    let frame = world.query::<&Frame>().single(world)?;
     assert_eq!(frame.data.as_slice(), Some(&[255u8, 0][..]));
     println!("pixels invertidos: {:?}", frame.data.as_slice());
     Ok(())

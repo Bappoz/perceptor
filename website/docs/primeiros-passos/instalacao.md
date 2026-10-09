@@ -6,7 +6,7 @@ title: Instalação
 
 ## Requisitos
 
-- Rust **1.88** ou mais recente (`rustup update stable`).
+- Rust **1.95** ou mais recente (`rustup update stable`).
 
 ## Adicionando ao projeto
 
@@ -17,11 +17,11 @@ Perceptor ainda não está publicado no crates.io. Use a dependência por git:
 perceptor = { git = "https://github.com/Bappoz/perceptor" }
 anyhow = "1"
 # Necessário apenas para declarar seus próprios componentes com #[derive(Component)]
-bevy_ecs = "0.15"
+bevy_ecs = "0.20"
 ```
 
 :::note
-O derive `Component` gera código que referencia a crate `bevy_ecs` pelo nome, por isso ela precisa estar no seu `Cargo.toml` na mesma versão usada pelo Perceptor (`0.15`).
+O derive `Component` gera código que referencia a crate `bevy_ecs` pelo nome, por isso ela precisa estar no seu `Cargo.toml` na mesma versão usada pelo Perceptor (`0.20`).
 :::
 
 ## Compilando a partir do código

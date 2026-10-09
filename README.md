@@ -70,7 +70,7 @@ Everything else — own image type, SIMD, camera capture, ML inference, GPU — 
 
 ## Development
 
-Requires Rust 1.88+ and [`just`](https://github.com/casey/just).
+Requires Rust 1.95+ and [`just`](https://github.com/casey/just).
 
 ```bash
 just ci          # fmt-check, clippy -D warnings, tests, rustdoc, release build
