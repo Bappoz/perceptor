@@ -1,0 +1,64 @@
+.hero {
+  padding: 4.5rem 1rem 3.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.title {
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.75rem;
+}
+
+.tagline {
+  font-size: 1.2rem;
+  color: var(--ifm-color-emphasis-700);
+  max-width: 44rem;
+  margin: 0 auto 2rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.section {
+  padding: 3rem 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.4rem;
+}
+
+.card h3 {
+  margin-bottom: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.card p {
+  margin: 0;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.95rem;
+}
+
+.quickstart {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.status {
+  text-align: center;
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+}
