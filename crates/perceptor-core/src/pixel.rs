@@ -433,6 +433,6 @@ mod tests {
 
     #[test]
     fn empty_slice_casts_to_empty() {
-        assert!(Rgba8::cast_slice(&[]).unwrap().is_empty());
+        assert_eq!(Rgba8::cast_slice(&[]).unwrap(), &[]);
     }
 }
