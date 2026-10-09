@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M0 — Fundação (em andamento)
 
+- `bevy_ecs` 0.20, `ndarray` 0.17 e MSRV 1.95; `wgpu` removido até o milestone de GPU ([#25](https://github.com/Bappoz/perceptor/issues/25)).
 - README, `CONTRIBUTING.md` e `CLAUDE.md` do projeto ([#28](https://github.com/Bappoz/perceptor/issues/28)).
 - Tipo de erro próprio (`perceptor_core::Error`); kernels e I/O deixam de entrar em pânico em entrada inválida e `anyhow` sai da API pública ([#24](https://github.com/Bappoz/perceptor/issues/24)).
 - Site e rustdoc publicados no GitHub Pages a cada merge ([#27](https://github.com/Bappoz/perceptor/issues/27)).

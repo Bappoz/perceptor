@@ -1,7 +1,7 @@
 # Perceptor — visão computacional em Rust: kernels puros + pipeline ECS
 
 ## Stack
-Rust 1.88+ (workspace) · `bevy_ecs` 0.15 · `ndarray` 0.15 · `image` 0.25 · `rayon` · testes com `cargo test` · site Docusaurus 3 (pnpm) em `website/`
+Rust 1.95+ (workspace) · `bevy_ecs` 0.20 · `ndarray` 0.17 · `image` 0.25 · `rayon` · testes com `cargo test` · site Docusaurus 3 (pnpm) em `website/`
 
 ## Comandos
 ```bash

@@ -85,7 +85,7 @@ fn filter_chain_grayscale_then_sobel() {
         let world = pipeline.world_mut();
         let mut q = world.query::<(&Frame, &GrayscaleTag)>();
         // single() verifica implicitamente que existe exatamente 1 resultado
-        let (frame, _) = q.single(world);
+        let (frame, _) = q.single(world).unwrap();
         assert_eq!(frame.channels(), 1, "frame deve ser grayscale (1 canal)");
     }
 
@@ -94,7 +94,7 @@ fn filter_chain_grayscale_then_sobel() {
     {
         let world = pipeline.world_mut();
         let mut q = world.query::<(&Frame, &GrayscaleTag, &SobelTag, &SobelMap)>();
-        let (frame, _, _, sobel) = q.single(world);
+        let (frame, _, _, sobel) = q.single(world).unwrap();
         assert_eq!(frame.channels(), 1);
         assert_eq!(sobel.magnitude.shape(), &[8, 8, 1]);
         assert!(
