@@ -12,11 +12,10 @@
 //!
 
 use bevy_ecs::prelude::*;
-use ndarray::Array3;
-use rayon::prelude::*;
+use perceptor_imgproc::grayscale::convert_to_gray;
 use tracing::trace;
 
-use crate::core::frame::Frame;
+use crate::frame::Frame;
 
 /// Componente marcador: indica que o frame foi convertido para grayscale.
 /// Permite que outros sistemas filtrem apenas frames já processados.
@@ -47,25 +46,4 @@ pub fn grayscale_system(
         // Marca o frame como processado para evitar re-processamento
         commands.entity(entity).insert(GrayscaleTag);
     }
-}
-
-// ── Lógica de conversão (implementar aqui) ─────────────────────────────────────
-
-/// Converte tensor RGB `[H, W, 3]` para luminância `[H, W, 1]`.
-///
-/// # Panics
-/// Panic se `input.shape()[2] != 3`.
-pub fn convert_to_gray(input: &Array3<u8>) -> Array3<u8> {
-    assert_eq!(input.shape()[2], 3, "esperado tensor RGB [H, W, 3]");
-    let h = input.shape()[0];
-    let w = input.shape()[1];
-
-    let flat: Vec<u8> = input
-        .as_slice()
-        .expect("convert_to_gray: array não é contíguo")
-        .par_chunks(3)
-        .map(|px| (0.299 * px[0] as f32 + 0.587 * px[1] as f32 + 0.114 * px[2] as f32) as u8)
-        .collect();
-
-    ndarray::Array3::from_shape_vec((h, w, 1), flat).expect("convert_to_gray: shape inválido")
 }

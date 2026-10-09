@@ -1,13 +1,15 @@
 //! # Perceptor
 //!
-//! Biblioteca de Computer Vision baseada em ECS (Entity Component System).
+//! Biblioteca de visão computacional em Rust: kernels puros e otimizados,
+//! orquestrados por um pipeline ECS.
 //!
-//! ## Conceito central
+//! Esta crate é a fachada do workspace e reexporta as camadas:
 //!
-//! Frames de vídeo são **Entidades** no mundo ECS. Transformações
-//! (grayscale, edge detection, inferência ML) são **Sistemas** que operam
-//! sobre **Componentes** dessas entidades. O [`Pipeline`] orquestra a
-//! execução dessas transformações em ordem e (opcionalmente) em paralelo.
+//! | Módulo       | Crate                | Conteúdo                                   |
+//! |--------------|----------------------|--------------------------------------------|
+//! | [`core`]     | `perceptor-core`     | Tipos fundamentais                         |
+//! | [`imgproc`]  | `perceptor-imgproc`  | Kernels de processamento como funções puras|
+//! | [`pipeline`] | `perceptor-pipeline` | Pipeline ECS, stages e plugins             |
 //!
 //! ## Quick start
 //!
@@ -24,11 +26,11 @@
 //! }
 //! ```
 
-#![warn(missing_docs)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+pub use perceptor_core as core;
+pub use perceptor_imgproc as imgproc;
+pub use perceptor_pipeline as pipeline;
 
-pub mod core;
-pub mod plugins;
-pub mod prelude;
-pub mod tests;
+/// Re-exports convenientes: `use perceptor::prelude::*;`.
+pub mod prelude {
+    pub use perceptor_pipeline::prelude::*;
+}

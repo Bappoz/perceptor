@@ -14,7 +14,7 @@
 
 pub mod inference;
 
-use crate::core::{pipeline::PipelineBuilder, plugin::Plugin};
+use crate::{pipeline::PipelineBuilder, plugin::Plugin};
 use inference::inference_system;
 
 /// Plugin de Machine Learning / inferência de modelos.

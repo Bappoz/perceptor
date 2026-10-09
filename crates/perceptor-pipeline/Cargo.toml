@@ -1,0 +1,23 @@
+[package]
+name = "perceptor-pipeline"
+description = "ECS pipeline, stages and plugins for the perceptor computer vision library"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+perceptor-core.workspace = true
+perceptor-imgproc.workspace = true
+anyhow.workspace = true
+bevy_ecs.workspace = true
+image.workspace = true
+ndarray.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true

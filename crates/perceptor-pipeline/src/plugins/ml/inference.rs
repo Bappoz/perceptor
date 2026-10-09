@@ -14,7 +14,7 @@
 use bevy_ecs::prelude::*;
 use tracing::warn;
 
-use crate::core::frame::Frame;
+use crate::frame::Frame;
 
 /// Recurso que configura o modelo ML a ser usado.
 #[derive(Resource, Debug, Default)]

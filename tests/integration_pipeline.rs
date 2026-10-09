@@ -5,14 +5,14 @@
 //! grayscale_system só é visível ao sobel_system no tick seguinte.
 
 use perceptor::{
-    core::{
+    pipeline::{
         frame::{Frame, FrameMeta},
         pipeline::Pipeline,
-    },
-    plugins::filters::{
-        grayscale::GrayscaleTag,
-        sobel::{SobelMap, SobelTag},
-        FiltersPlugin,
+        plugins::filters::{
+            grayscale::GrayscaleTag,
+            sobel::{SobelMap, SobelTag},
+            FiltersPlugin,
+        },
     },
     prelude::Array3,
 };
@@ -37,7 +37,7 @@ fn io_pipeline_writes_grayscale_output() {
     create_edge_png(&input);
 
     let mut pipeline = Pipeline::builder()
-        .add_plugin(perceptor::plugins::io::IoPlugin {
+        .add_plugin(perceptor::pipeline::plugins::io::IoPlugin {
             input_path: input,
             output_path: output.clone(),
             ..Default::default()

@@ -1,5 +1,6 @@
 use crate::{
-    core::{frame::Frame, pipeline::Pipeline},
+    frame::Frame,
+    pipeline::Pipeline,
     plugins::io::{config::ImageFormat, IoConfig, IoPlugin},
 };
 

@@ -6,7 +6,7 @@
 //! # Exemplo de plugin customizado
 //!
 //! ```rust,no_run
-//! use perceptor::core::{pipeline::PipelineBuilder, plugin::Plugin};
+//! use perceptor_pipeline::{pipeline::PipelineBuilder, plugin::Plugin};
 //!
 //! pub struct MyPlugin;
 //!
@@ -19,7 +19,7 @@
 //! }
 //! ```
 
-use crate::core::pipeline::PipelineBuilder;
+use crate::pipeline::PipelineBuilder;
 
 /// Trait que todo plugin deve implementar.
 pub trait Plugin: Send + Sync + 'static {
