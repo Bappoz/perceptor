@@ -147,13 +147,13 @@ impl<P: Pixel> Image<P> {
         (self.width, self.height)
     }
 
-    /// Distância, em pixels, entre o início de duas linhas consecutivas.
+    /// Distância, em subpixels, entre o início de duas linhas consecutivas.
     ///
-    /// Em uma imagem dona do buffer é sempre igual à largura; visões sobre
+    /// Em uma imagem dona do buffer é sempre `width · canais`; visões sobre
     /// buffers externos podem ter linhas com preenchimento.
     #[must_use]
     pub fn stride(&self) -> usize {
-        self.width
+        self.width * P::CHANNELS
     }
 
     /// Todos os pixels, em ordem de linha.
@@ -310,7 +310,7 @@ mod tests {
         let img = Image::<Rgb8>::new(4, 3).unwrap();
         assert_eq!((img.width(), img.height()), (4, 3));
         assert_eq!(img.dimensions(), (4, 3));
-        assert_eq!(img.stride(), 4);
+        assert_eq!(img.stride(), 12);
         assert_eq!(img.as_pixels().len(), 12);
         assert_eq!(img.as_subpixels().len(), 36);
         assert_eq!(img.as_bytes().len(), 36);

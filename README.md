@@ -64,7 +64,7 @@ Everything else — own image type, SIMD, camera capture, ML inference, GPU — 
 | Crate | Role |
 |---|---|
 | `perceptor` | facade re-exporting the layers and the prelude |
-| `perceptor-core` | fundamental types (`Error`, `Pixel` formats, `Image<P>`) |
+| `perceptor-core` | fundamental types (`Error`, `Pixel` formats, `Image<P>`, zero-copy views) |
 | `perceptor-imgproc` | image processing kernels as pure functions |
 | `perceptor-pipeline` | ECS pipeline, stages, plugins and systems |
 

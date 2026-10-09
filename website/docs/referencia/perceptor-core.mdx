@@ -5,6 +5,7 @@ title: perceptor-core
 import CodeBlock from '@theme/CodeBlock';
 import Example from '!!raw-loader!@site/../examples/read_frame_error.rs';
 import ImageBasics from '!!raw-loader!@site/../examples/image_basics.rs';
+import ViewsRoi from '!!raw-loader!@site/../examples/views_roi.rs';
 import PixelCast from '!!raw-loader!@site/../examples/pixel_cast.rs';
 
 # perceptor-core
@@ -21,6 +22,13 @@ Todas as crates do Perceptor retornam `perceptor_core::Result<T>`, um alias para
 | `ChannelMismatch { expected, actual }` | a operação exige um número específico de canais |
 | `UnsupportedChannels { channels }` | o número de canais não tem representação no destino (ex.: formato de arquivo) |
 | `NonContiguous` | o buffer não está em memória contígua em ordem de linha |
+| `InvalidDimensions { width, height }` | dimensão zero ou tamanho que não cabe em memória |
+| `Allocation { bytes }` | o alocador não atendeu ao pedido |
+| `DimensionMismatch { expected, actual }` | quantidade de pixels diferente de `largura · altura` |
+| `ShapeMismatch { expected, actual }` | duas imagens deveriam ter as mesmas dimensões |
+| `InvalidStride { stride, min }` | stride menor que uma linha |
+| `BufferTooSmall { required, actual }` | buffer menor que a geometria descrita |
+| `OutOfBounds { region, width, height }` | região fora da imagem |
 | `Decode { path, source }` | falha ao ler ou decodificar uma imagem |
 | `Encode { path, source }` | falha ao codificar ou gravar uma imagem |
 
@@ -83,7 +91,10 @@ Todos retornam `Result`:
 
 | Acesso | Retorno |
 |---|---|
-| `width()`, `height()`, `dimensions()`, `stride()` | geometria; em `Image` o stride é igual à largura |
+| `width()`, `height()`, `dimensions()` | geometria em pixels |
+| `stride()` | subpixels entre o início de duas linhas; em `Image` é `width · canais` |
+| `view()` / `view_mut()` | visão da imagem inteira |
+| `roi(rect)` / `roi_mut(rect)` | visão de um recorte |
 | `as_pixels()` / `as_pixels_mut()` | `&[P]` com todos os pixels |
 | `as_subpixels()` / `as_subpixels_mut()` | `&[P::Subpixel]` intercalado |
 | `as_bytes()` | `&[u8]` |
@@ -96,8 +107,43 @@ Todos retornam `Result`:
 
 `from_vec` copia os pixels: um `Vec<P>` comum não garante alinhamento de 64 bytes, e adotá-lo quebraria a invariante.
 
+## Visões: `ImageView` e `ImageViewMut`
+
+Uma visão descreve uma região retangular de pixels em memória que pertence a outro dono, sem copiar nada: uma `Image`, um recorte dela, ou um buffer externo cujas linhas têm preenchimento.
+
+```rust
+ImageView::<Rgb8>::new(&buffer, width, height, stride)?
+```
+
+O `stride` é medido em **subpixels** (para formatos `u8`, bytes) e não precisa ser múltiplo do tamanho do pixel — câmeras costumam alinhar linhas RGB a 4 ou 8 bytes.
+
+| Erro de `new` | Condição |
+|---|---|
+| `InvalidDimensions` | dimensão zero ou geometria que estoura `usize` |
+| `InvalidStride { stride, min }` | `stride < width · canais` |
+| `BufferTooSmall { required, actual }` | o buffer não contém todas as linhas (a última dispensa o preenchimento) |
+
+| Método | `ImageView` | `ImageViewMut` |
+|---|---|---|
+| `width`, `height`, `dimensions`, `stride` | ✓ | ✓ |
+| `row(y)`, `get(x, y)` | ✓ | ✓ |
+| `row_mut(y)`, `get_mut(x, y)`, `fill(pixel)` | — | ✓ |
+| `roi(rect)` | ✓ (a visão é `Copy`) | `into_roi(rect)`, consome a visão |
+| `is_contiguous()`, `as_pixels()` | ✓ | — |
+| `to_image()` | cópia compacta e alinhada | via `as_view()` |
+| `copy_from(&view)` | — | erro `ShapeMismatch` se as dimensões diferirem |
+| `split_at_row(y)` | — | duas metades mutáveis disjuntas |
+| `as_view()`, `reborrow()` | — | ✓ |
+
+`Rect::new(x, y, width, height)` descreve a região; uma região que não cabe retorna `OutOfBounds`.
+
+<CodeBlock language="rust" title="examples/views_roi.rs">{ViewsRoi}</CodeBlock>
+
+`split_at_row` é a base do paralelismo por faixas: o verificador de empréstimos garante que as duas metades não se sobrepõem, então cada uma pode ser processada em uma thread sem `unsafe`.
+
 ## Em construção
 
 | Item | Issue |
 |---|---|
-| `ImageView` / `ImageViewMut` | [#32](https://github.com/Bappoz/perceptor/issues/32) |
+| iteradores por linha e faixas paralelas | [#33](https://github.com/Bappoz/perceptor/issues/33) |
+| `BorderMode` | [#34](https://github.com/Bappoz/perceptor/issues/34) |

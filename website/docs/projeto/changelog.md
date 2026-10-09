@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M1 — Core de imagem (em andamento)
 
+- `ImageView`/`ImageViewMut`: visões sem cópia com stride arbitrário, recortes (`roi`) e divisão em faixas mutáveis disjuntas ([#32](https://github.com/Bappoz/perceptor/issues/32)).
 - `Image<P>`: imagem dona do buffer, alinhada a 64 bytes, com construtores falíveis ([#31](https://github.com/Bappoz/perceptor/issues/31)).
 - Trait `Pixel` e oito formatos de pixel tipados com casts sem cópia entre fatias de pixels e de subpixels ([#30](https://github.com/Bappoz/perceptor/issues/30)).
 
