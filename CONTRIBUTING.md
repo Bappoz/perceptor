@@ -15,7 +15,7 @@ just ci           # fmt-check → clippy -D warnings → test → rustdoc → bu
 just docs-build   # quando tocar website/ ou examples/
 ```
 
-O CI roda os mesmos comandos. PR com gate vermelho não é revisado.
+O CI roda os mesmos comandos, mais `just miri` (requer `rustup +nightly component add miri`). PR com gate vermelho não é revisado.
 
 ## Convenções
 
@@ -23,6 +23,7 @@ O CI roda os mesmos comandos. PR com gate vermelho não é revisado.
 - **Kernels** ficam em `perceptor-imgproc` como funções puras; sistemas ECS em `perceptor-pipeline` apenas os chamam.
 - **Erros:** funções públicas retornam `perceptor_core::Result`. `unwrap`/`expect` em código de lib só com a invariante comentada.
 - **`unsafe`:** proibido fora dos módulos designados; todo bloco leva `// SAFETY:` e tem uma versão segura de referência testada contra ele.
+- **Miri:** `perceptor-core` e todo módulo com `unsafe` rodam sob Miri no CI. Teste que depende de I/O real ou é lento demais sob interpretação leva `#[cfg_attr(miri, ignore)]` com o motivo em comentário.
 - **Performance:** mudança de performance vem com benchmark antes e depois no PR.
 - **Dependências novas** precisam de justificativa no PR.
 - **Exemplos de código na documentação** são importados de `examples/`, que o CI compila; não cole trechos soltos.
