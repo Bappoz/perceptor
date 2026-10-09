@@ -6,7 +6,11 @@ title: Changelog
 
 Mudanças por milestone, da mais recente para a mais antiga.
 
-## M0 — Fundação (em andamento)
+## M1 — Core de imagem (em andamento)
+
+_Nenhuma mudança publicada ainda._
+
+## M0 — Fundação
 
 - `cargo-deny` no CI: licenças, advisories e origem das dependências ([#21](https://github.com/Bappoz/perceptor/issues/21)).
 - Cobertura de testes medida no CI com `cargo-llvm-cov` ([#29](https://github.com/Bappoz/perceptor/issues/29)).

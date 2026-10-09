@@ -29,19 +29,19 @@ perceptor (fachada, features)
 
 Workspace, tooling, CI, qualidade base e site de docs.
 
-- [ ] #17 chore(workspace): converter em workspace multi-crate (core, imgproc, pipeline + fachada)
-- [ ] #18 chore(tooling): justfile com receitas fmt, lint, test, miri, doc, bench e ci
-- [ ] #19 ci: pipeline de qualidade (fmt, clippy -D warnings, test, doc, MSRV)
-- [ ] #20 ci: Miri para perceptor-core e módulos com unsafe
-- [ ] #21 chore(deps): cargo-deny para licenças, advisories e duplicatas
-- [ ] #22 refactor: zerar warnings do clippy pedantic (74 hoje)
-- [ ] #23 refactor(test): remover `pub mod tests` da API e tirar fixtures/saídas de src/
-- [ ] #24 feat(core): PerceptorError com thiserror e alias Result
-- [ ] #25 chore(deps): atualizar bevy_ecs, ndarray e wgpu e fixar MSRV
-- [ ] #26 docs: scaffold Docusaurus em website/ com estrutura de documentação de lib
-- [ ] #27 ci(docs): build e deploy do Docusaurus no GitHub Pages
-- [ ] #28 docs: README vitrine, CLAUDE.md do projeto e CONTRIBUTING
-- [ ] #29 ci: cobertura de testes com cargo-llvm-cov
+- [x] #17 chore(workspace): converter em workspace multi-crate (core, imgproc, pipeline + fachada)
+- [x] #18 chore(tooling): justfile com receitas fmt, lint, test, miri, doc, bench e ci
+- [x] #19 ci: pipeline de qualidade (fmt, clippy -D warnings, test, doc, MSRV)
+- [x] #20 ci: Miri para perceptor-core e módulos com unsafe
+- [x] #21 chore(deps): cargo-deny para licenças, advisories e duplicatas
+- [x] #22 refactor: zerar warnings do clippy pedantic (74 hoje)
+- [x] #23 refactor(test): remover `pub mod tests` da API e tirar fixtures/saídas de src/
+- [x] #24 feat(core): PerceptorError com thiserror e alias Result
+- [x] #25 chore(deps): atualizar bevy_ecs, ndarray e wgpu e fixar MSRV
+- [x] #26 docs: scaffold Docusaurus em website/ com estrutura de documentação de lib
+- [x] #27 ci(docs): build e deploy do Docusaurus no GitHub Pages
+- [x] #28 docs: README vitrine, CLAUDE.md do projeto e CONTRIBUTING
+- [x] #29 ci: cobertura de testes com cargo-llvm-cov
 
 ## M1 — Core de imagem
 
