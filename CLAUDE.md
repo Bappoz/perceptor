@@ -13,7 +13,7 @@ just docs-dev     # site em modo dev
 Rodar `just ci` antes de concluir qualquer mudança; `just docs-build` se tocar `website/` ou `examples/`.
 
 ## Arquitetura
-- `crates/perceptor-core` — tipos fundamentais (`Error`, `Result`; imagem a partir do M1). `forbid(unsafe_code)`.
+- `crates/perceptor-core` — tipos fundamentais (`Error`, `Pixel` e formatos; `Image<P>` em andamento no M1). `forbid(unsafe_code)`.
 - `crates/perceptor-imgproc` — kernels como funções puras. Não conhece ECS nem I/O.
 - `crates/perceptor-pipeline` — `Frame`, stages, plugins e sistemas que chamam os kernels.
 - `src/` — fachada `perceptor` (re-exports + prelude). `examples/` — exemplos embutidos no site.

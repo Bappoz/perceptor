@@ -4,6 +4,7 @@ title: perceptor-core
 
 import CodeBlock from '@theme/CodeBlock';
 import Example from '!!raw-loader!@site/../examples/read_frame_error.rs';
+import PixelCast from '!!raw-loader!@site/../examples/pixel_cast.rs';
 
 # perceptor-core
 
@@ -15,6 +16,7 @@ Todas as crates do Perceptor retornam `perceptor_core::Result<T>`, um alias para
 
 | Variante | Quando ocorre |
 |---|---|
+| `BufferLength { len, channels }` | o buffer não contém um número inteiro de pixels |
 | `ChannelMismatch { expected, actual }` | a operação exige um número específico de canais |
 | `UnsupportedChannels { channels }` | o número de canais não tem representação no destino (ex.: formato de arquivo) |
 | `NonContiguous` | o buffer não está em memória contígua em ordem de linha |
@@ -27,10 +29,39 @@ O enum é `#[non_exhaustive]`: um `match` fora da crate precisa de um braço `_`
 
 `Error` implementa `std::error::Error + Send + Sync`, então converte para `anyhow::Error` com `?` em binários.
 
+## Formatos de pixel
+
+O formato faz parte do tipo: uma função que recebe `&[Rgb8]` não precisa checar o número de canais em runtime.
+
+| Tipo | Subpixel | Canais | Ordem na memória |
+|---|---|---|---|
+| `L8` | `u8` | 1 | `L` |
+| `La8` | `u8` | 2 | `L, A` |
+| `Rgb8` | `u8` | 3 | `R, G, B` |
+| `Rgba8` | `u8` | 4 | `R, G, B, A` |
+| `Bgr8` | `u8` | 3 | `B, G, R` |
+| `L16` | `u16` | 1 | `L` |
+| `LF32` | `f32` | 1 | `L` |
+| `RgbF32` | `f32` | 3 | `R, G, B` |
+
+Cada tipo é um wrapper `#[repr(transparent)]` sobre um array de subpixels, então `&[Rgb8]` e `&[u8]` descrevem a mesma memória. O trait `Pixel` expõe as conversões:
+
+| Item | Descrição |
+|---|---|
+| `Pixel::CHANNELS`, `Pixel::FORMAT` | número de canais e `PixelFormat` correspondente |
+| `channels()` / `channels_mut()` | canais de um pixel, na ordem da memória |
+| `cast_slice` / `cast_slice_mut` | `&[Subpixel]` → `&[Self]`; erro `BufferLength` se o comprimento não for múltiplo dos canais |
+| `as_subpixels` / `as_subpixels_mut` | `&[Self]` → `&[Subpixel]`; nunca falha |
+
+<CodeBlock language="rust" title="examples/pixel_cast.rs">{PixelCast}</CodeBlock>
+
+`PixelFormat` é o mesmo conjunto como enum de runtime (`channels()`, `sample()`, `bytes_per_pixel()`), para quando o formato só é conhecido ao decodificar um arquivo ou negociar com uma câmera. `Subpixel` é implementado apenas para `u8`, `u16` e `f32`; `Subpixel::MAX` é o branco nominal (`255`, `65535`, `1.0`).
+
+Os casts são feitos pela crate [`bytemuck`](https://docs.rs/bytemuck), que verifica tamanho e alinhamento; `perceptor-core` continua sem nenhum `unsafe` próprio.
+
 ## Em construção
 
 | Item | Issue |
 |---|---|
-| trait `Pixel` e formatos | [#30](https://github.com/Bappoz/perceptor/issues/30) |
 | `Image<P>` | [#31](https://github.com/Bappoz/perceptor/issues/31) |
 | `ImageView` / `ImageViewMut` | [#32](https://github.com/Bappoz/perceptor/issues/32) |

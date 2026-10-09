@@ -23,6 +23,8 @@ ndarray = { version = "0.17", features = ["rayon"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "bmp"] }
 # Paralelismo data-parallel
 rayon = "1.12"
+# Casts verificados entre fatias de pixels e de subpixels (sem unsafe próprio)
+bytemuck = { version = "1.25", features = ["derive"] }
 # Tratamento de erros
 anyhow = "1.0"
 thiserror = "2.0"

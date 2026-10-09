@@ -769,6 +769,7 @@ dependencies = [
 name = "perceptor-core"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "thiserror",
 ]
 
