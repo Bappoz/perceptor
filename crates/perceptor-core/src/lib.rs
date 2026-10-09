@@ -7,12 +7,14 @@
 
 #![forbid(unsafe_code)]
 
+mod border;
 mod error;
 mod image;
 mod iter;
 mod pixel;
 mod view;
 
+pub use border::BorderMode;
 pub use error::{BoxError, Error, Result};
 pub use image::Image;
 pub use pixel::{

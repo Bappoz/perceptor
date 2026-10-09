@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M1 — Core de imagem (em andamento)
 
+- `BorderMode` com cinco modos de extrapolação na convenção do OpenCV, acesso com borda e linha estendida ([#34](https://github.com/Bappoz/perceptor/issues/34)).
 - Iteradores por linha e por pixel, e versões paralelas por linha e por faixa sobre rayon ([#33](https://github.com/Bappoz/perceptor/issues/33)).
 - `ImageView`/`ImageViewMut`: visões sem cópia com stride arbitrário, recortes (`roi`) e divisão em faixas mutáveis disjuntas ([#32](https://github.com/Bappoz/perceptor/issues/32)).
 - `Image<P>`: imagem dona do buffer, alinhada a 64 bytes, com construtores falíveis ([#31](https://github.com/Bappoz/perceptor/issues/31)).
