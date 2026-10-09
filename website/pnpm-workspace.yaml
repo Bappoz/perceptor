@@ -1,0 +1,5 @@
+# Scripts de pós-instalação não são necessários para o build do site
+# (@swc/core apenas valida o binário nativo; core-js exibe um banner).
+allowBuilds:
+  '@swc/core': false
+  core-js: false

@@ -40,3 +40,16 @@ bench *args:
 
 # Gates na ordem: format → lint → test → doc → build
 ci: fmt-check lint test doc build
+
+# Instala as dependências do site de documentação
+docs-install:
+    pnpm --dir website install --frozen-lockfile
+
+# Site de documentação em modo de desenvolvimento
+docs-dev:
+    pnpm --dir website start
+
+# Build de produção do site (falha em link quebrado) + typecheck
+docs-build:
+    pnpm --dir website typecheck
+    pnpm --dir website build

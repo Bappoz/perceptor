@@ -1,0 +1,32 @@
+---
+title: Primeiro pipeline
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/grayscale.rs';
+
+# Primeiro pipeline
+
+O exemplo abaixo lê uma imagem, converte para escala de cinza e salva o resultado. O código exibido é o próprio arquivo `examples/grayscale.rs` do repositório, compilado no CI.
+
+<CodeBlock language="rust" title="examples/grayscale.rs">{Example}</CodeBlock>
+
+Para executar:
+
+```bash
+cargo run --example grayscale -- entrada.png saida.png
+```
+
+## O que acontece
+
+1. `Pipeline::builder()` cria um builder com um `World` ECS vazio.
+2. `IoPlugin` registra o leitor no `InputStage` e o escritor no `OutputStage`.
+3. `FiltersPlugin` registra `grayscale_system` no `ProcessStage`.
+4. `run()` executa *ticks* até que algum sistema sinalize parada. Em cada tick os cinco stages rodam em ordem.
+
+Neste exemplo um único tick basta: o leitor cria a entidade `Frame`, o filtro substitui os pixels pela luminância e o escritor salva o arquivo e pede a parada.
+
+## Próximos passos
+
+- [Pipeline e stages](../conceitos/pipeline-e-stages.md) explica a ordem de execução e quando componentes ficam visíveis.
+- [Escrevendo um plugin](../guias/escrevendo-um-plugin.mdx) mostra como adicionar seus próprios sistemas.

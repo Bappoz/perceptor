@@ -1,0 +1,32 @@
+---
+title: Escrevendo um plugin
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/custom_plugin.rs';
+
+# Escrevendo um plugin
+
+Um plugin tem três partes: o **kernel** (função pura), o **sistema** (que aplica o kernel aos frames) e o **plugin** (que registra o sistema em um stage). O exemplo abaixo inverte as cores de cada frame; é o arquivo `examples/custom_plugin.rs` do repositório, compilado no CI.
+
+<CodeBlock language="rust" title="examples/custom_plugin.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example custom_plugin
+```
+
+## Pontos de atenção
+
+- **Componente marcador**: `Without<InvertTag>` na query garante que cada frame seja processado uma única vez. Sem isso, o sistema inverteria o frame de novo a cada tick.
+- **`#[derive(Component)]`** exige `bevy_ecs` como dependência direta do seu projeto — veja [Instalação](../primeiros-passos/instalacao.md).
+- **Kernel separado**: `invert` pode ser testada sem montar um pipeline.
+
+## Métodos de registro
+
+| Método do builder | Stage |
+|---|---|
+| `add_input_system` | `InputStage` |
+| `add_pre_process_system` | `PreProcessStage` |
+| `add_process_system` | `ProcessStage` |
+| `add_post_process_system` | `PostProcessStage` |
+| `add_output_system` | `OutputStage` |

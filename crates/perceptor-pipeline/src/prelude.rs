@@ -15,5 +15,7 @@ pub use crate::plugins::{filters::FiltersPlugin, io::IoPlugin, ml::MlPlugin};
 
 // Re-exports de crates externas frequentemente necessários
 pub use anyhow::{Context, Result};
-pub use bevy_ecs::prelude::{Commands, Component, Entity, Query, Res, ResMut, Resource, World};
+pub use bevy_ecs::prelude::{
+    Commands, Component, Entity, Query, Res, ResMut, Resource, With, Without, World,
+};
 pub use ndarray::Array3;
