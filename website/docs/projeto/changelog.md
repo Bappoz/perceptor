@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M0 — Fundação (em andamento)
 
+- Cobertura de testes medida no CI com `cargo-llvm-cov` ([#29](https://github.com/Bappoz/perceptor/issues/29)).
 - Miri no CI para `perceptor-core` ([#20](https://github.com/Bappoz/perceptor/issues/20)).
 - `bevy_ecs` 0.20, `ndarray` 0.17 e MSRV 1.95; `wgpu` removido até o milestone de GPU ([#25](https://github.com/Bappoz/perceptor/issues/25)).
 - README, `CONTRIBUTING.md` e `CLAUDE.md` do projeto ([#28](https://github.com/Bappoz/perceptor/issues/28)).

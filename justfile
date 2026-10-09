@@ -38,6 +38,10 @@ miri *args:
 bench *args:
     cargo bench --workspace {{ args }}
 
+# Cobertura de testes (requer cargo-llvm-cov); `just cov --html` gera relatório navegável
+cov *args:
+    cargo llvm-cov --workspace {{ args }}
+
 # Gates na ordem: format → lint → test → doc → build
 ci: fmt-check lint test doc build
 
