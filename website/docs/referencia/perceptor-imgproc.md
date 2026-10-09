@@ -9,7 +9,7 @@ Kernels de processamento de imagem como funções puras.
 ## `grayscale`
 
 ```rust
-pub fn convert_to_gray(input: &Array3<u8>) -> Array3<u8>
+pub fn convert_to_gray(input: &Array3<u8>) -> Result<Array3<u8>>
 ```
 
 Converte RGB `[H, W, 3]` em luminância `[H, W, 1]` com os pesos BT.601:
@@ -18,12 +18,17 @@ Converte RGB `[H, W, 3]` em luminância `[H, W, 1]` com os pesos BT.601:
 Y = 0.299·R + 0.587·G + 0.114·B
 ```
 
-O resultado é truncado (não arredondado). Entra em pânico se a entrada não tiver 3 canais.
+O resultado é truncado (não arredondado).
+
+| Erro | Condição |
+|---|---|
+| `ChannelMismatch { expected: 3, .. }` | entrada sem 3 canais |
+| `NonContiguous` | tensor fora de ordem de linha |
 
 ## `sobel`
 
 ```rust
-pub fn apply_sobel(input: &Array3<u8>) -> Array3<u8>
+pub fn apply_sobel(input: &Array3<u8>) -> Result<Array3<u8>>
 ```
 
 Magnitude do gradiente Sobel 3×3 de uma imagem em tons de cinza `[H, W, 1]`:
@@ -32,4 +37,9 @@ Magnitude do gradiente Sobel 3×3 de uma imagem em tons de cinza `[H, W, 1]`:
 G = sqrt(Gx² + Gy²), saturado em 255
 ```
 
-Usa preenchimento com zeros nas bordas, portanto pixels de borda de uma imagem uniforme têm resposta não nula. Entra em pânico se a entrada não tiver 1 canal.
+Usa preenchimento com zeros nas bordas, portanto pixels de borda de uma imagem uniforme têm resposta não nula.
+
+| Erro | Condição |
+|---|---|
+| `ChannelMismatch { expected: 1, .. }` | entrada sem 1 canal |
+| `NonContiguous` | tensor fora de ordem de linha |

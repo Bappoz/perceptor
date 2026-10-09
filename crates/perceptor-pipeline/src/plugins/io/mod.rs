@@ -57,7 +57,7 @@ impl Plugin for IoPlugin {
         builder.world_mut().insert_resource(IoConfig {
             input_path: self.input_path.clone(),
             output_path: self.output_path.clone(),
-            format: self.format.clone(),
+            format: self.format,
             next_index: 0,
         });
     }

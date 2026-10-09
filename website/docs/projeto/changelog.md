@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M0 — Fundação (em andamento)
 
+- Tipo de erro próprio (`perceptor_core::Error`); kernels e I/O deixam de entrar em pânico em entrada inválida e `anyhow` sai da API pública ([#24](https://github.com/Bappoz/perceptor/issues/24)).
 - Site e rustdoc publicados no GitHub Pages a cada merge ([#27](https://github.com/Bappoz/perceptor/issues/27)).
 - Site de documentação com Docusaurus ([#26](https://github.com/Bappoz/perceptor/issues/26)).
 - CI executando formatação, clippy, testes, rustdoc e MSRV em todo PR ([#19](https://github.com/Bappoz/perceptor/issues/19)).

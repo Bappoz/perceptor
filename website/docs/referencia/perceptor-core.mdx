@@ -1,0 +1,36 @@
+---
+title: perceptor-core
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/read_frame_error.rs';
+
+# perceptor-core
+
+Tipos fundamentais, sem dependência de ECS ou I/O. A crate usa `#![forbid(unsafe_code)]`.
+
+## `Error` e `Result`
+
+Todas as crates do Perceptor retornam `perceptor_core::Result<T>`, um alias para `Result<T, perceptor_core::Error>`.
+
+| Variante | Quando ocorre |
+|---|---|
+| `ChannelMismatch { expected, actual }` | a operação exige um número específico de canais |
+| `UnsupportedChannels { channels }` | o número de canais não tem representação no destino (ex.: formato de arquivo) |
+| `NonContiguous` | o buffer não está em memória contígua em ordem de linha |
+| `Decode { path, source }` | falha ao ler ou decodificar uma imagem |
+| `Encode { path, source }` | falha ao codificar ou gravar uma imagem |
+
+O enum é `#[non_exhaustive]`: um `match` fora da crate precisa de um braço `_`. `Decode` e `Encode` preservam o erro original em `source()`.
+
+<CodeBlock language="rust" title="examples/read_frame_error.rs">{Example}</CodeBlock>
+
+`Error` implementa `std::error::Error + Send + Sync`, então converte para `anyhow::Error` com `?` em binários.
+
+## Em construção
+
+| Item | Issue |
+|---|---|
+| trait `Pixel` e formatos | [#30](https://github.com/Bappoz/perceptor/issues/30) |
+| `Image<P>` | [#31](https://github.com/Bappoz/perceptor/issues/31) |
+| `ImageView` / `ImageViewMut` | [#32](https://github.com/Bappoz/perceptor/issues/32) |

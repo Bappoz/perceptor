@@ -4,9 +4,9 @@
 //! fase. A cada chamada de `tick()` ele executa os stages em ordem,
 //! processando todos os frames que estiverem no world naquele momento.
 
-use anyhow::Result;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
+use perceptor_core::Result;
 use tracing::{debug, info};
 
 use crate::plugin::Plugin;

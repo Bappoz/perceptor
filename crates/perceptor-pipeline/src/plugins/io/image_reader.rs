@@ -9,11 +9,29 @@
 //! - Leitura de câmera via `nokhwa`
 //! - Stream RTSP
 
+use std::path::Path;
+
 use bevy_ecs::prelude::*;
+use perceptor_core::{Error, Result};
 use tracing::{info, warn};
 
 use crate::frame::{Frame, FrameMeta};
 use crate::plugins::io::IoConfig;
+
+/// Lê e decodifica uma imagem do disco como [`Frame`] RGB.
+///
+/// # Errors
+/// [`Error::Decode`] se o arquivo não existir, não puder ser lido ou não for
+/// uma imagem em formato suportado.
+pub fn read_frame(path: &Path, index: u64) -> Result<Frame> {
+    let img = image::open(path).map_err(|e| Error::decode(path, e))?;
+    let meta = FrameMeta {
+        index,
+        timestamp_us: 0,
+        source: path.to_string_lossy().into_owned(),
+    };
+    Ok(Frame::from_dynamic_image(meta, img))
+}
 
 /// Sistema ECS: lê um frame da fonte configurada e o spawna como entidade.
 /// Registrado no `InputStage` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
@@ -28,29 +46,22 @@ pub fn image_reader_system(
         return;
     }
 
-    let img = match image::open(&config.input_path) {
-        Ok(img) => img,
+    let frame = match read_frame(&config.input_path, config.next_index) {
+        Ok(frame) => frame,
         Err(e) => {
-            warn!(
-                "image_reader_system: falha ao abrir '{:?}': {e}",
-                config.input_path
-            );
+            warn!("image_reader_system: {e}");
             state.should_stop = true;
             return;
         }
     };
 
-    let meta = FrameMeta {
-        index: config.next_index,
-        timestamp_us: 0,
-        source: config.input_path.to_string_lossy().into_owned(),
-    };
-    let frame = Frame::from_dynamic_image(meta, img);
     info!(
-    index = config.next_index,
-    path = ?config.input_path,
-    "image_reader_system: spawned frame {}x{}x{}",
-    frame.height(), frame.width(), frame.channels()
+        index = config.next_index,
+        path = ?config.input_path,
+        "image_reader_system: spawned frame {}x{}x{}",
+        frame.height(),
+        frame.width(),
+        frame.channels()
     );
 
     commands.spawn(frame);

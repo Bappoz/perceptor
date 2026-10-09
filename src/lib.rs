@@ -22,7 +22,8 @@
 //!         .add_plugin(FiltersPlugin::default())
 //!         .build();
 //!
-//!     pipeline.run()
+//!     pipeline.run()?;
+//!     Ok(())
 //! }
 //! ```
 

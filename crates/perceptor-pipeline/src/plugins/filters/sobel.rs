@@ -20,7 +20,7 @@
 
 use bevy_ecs::prelude::*;
 use perceptor_imgproc::sobel::apply_sobel;
-use tracing::trace;
+use tracing::{trace, warn};
 
 use crate::frame::Frame;
 use crate::plugins::filters::grayscale::GrayscaleTag;
@@ -60,10 +60,13 @@ pub fn sobel_system(
             frame.width()
         );
 
-        let magnitude = apply_sobel(&frame.data);
-
-        commands
-            .entity(entity)
-            .insert((SobelMap { magnitude }, SobelTag));
+        match apply_sobel(&frame.data) {
+            Ok(magnitude) => {
+                commands
+                    .entity(entity)
+                    .insert((SobelMap { magnitude }, SobelTag));
+            }
+            Err(e) => warn!(entity = ?entity, "sobel_system: {e}"),
+        }
     }
 }

@@ -1274,12 +1274,16 @@ dependencies = [
 [[package]]
 name = "perceptor-core"
 version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.18",
+]
 
 [[package]]
 name = "perceptor-imgproc"
 version = "0.1.0"
 dependencies = [
  "ndarray",
+ "perceptor-core",
  "rayon",
 ]
 
@@ -1287,14 +1291,12 @@ dependencies = [
 name = "perceptor-pipeline"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bevy_ecs",
  "image",
  "ndarray",
  "perceptor-core",
  "perceptor-imgproc",
  "tempfile",
- "thiserror 2.0.18",
  "tracing",
 ]
 
