@@ -10,6 +10,7 @@
 mod border;
 mod error;
 mod image;
+mod interop;
 mod iter;
 mod pixel;
 mod view;
@@ -17,6 +18,8 @@ mod view;
 pub use border::BorderMode;
 pub use error::{BoxError, Error, Result};
 pub use image::Image;
+#[cfg(feature = "image")]
+pub use interop::ImagePixel;
 pub use pixel::{
     Bgr8, La8, Pixel, PixelFormat, Rgb8, RgbF32, Rgba8, SampleType, Subpixel, L16, L8, LF32,
 };

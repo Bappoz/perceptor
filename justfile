@@ -23,6 +23,7 @@ lint:
 test *args:
     cargo test --workspace {{ args }}
     cargo test -q -p perceptor-core --no-default-features {{ args }}
+    cargo test -q -p perceptor-core --all-features {{ args }}
 
 # Rustdoc com links quebrados e docs faltantes tratados como erro
 doc:
