@@ -8,6 +8,7 @@ import ImageBasics from '!!raw-loader!@site/../examples/image_basics.rs';
 import ViewsRoi from '!!raw-loader!@site/../examples/views_roi.rs';
 import ParallelRows from '!!raw-loader!@site/../examples/parallel_rows.rs';
 import BorderModes from '!!raw-loader!@site/../examples/border_modes.rs';
+import Interop from '!!raw-loader!@site/../examples/interop.rs';
 import PixelCast from '!!raw-loader!@site/../examples/pixel_cast.rs';
 
 # perceptor-core
@@ -185,9 +186,36 @@ Filtros espaciais precisam de vizinhos que não existem nas bordas. `BorderMode<
 
 `map_index` funciona para qualquer distância da imagem (a reflexão continua "quicando") e para qualquer comprimento de eixo, sem overflow. `padded_row` é o que os filtros separáveis usam: estende-se a linha uma vez e o laço interno roda sem nenhum teste de borda.
 
+## Interoperabilidade
+
+Conversões de e para outras crates ficam atrás de features de `perceptor-core`. Pela fachada `perceptor` as duas já vêm habilitadas.
+
+### Feature `image`
+
+| Método | Cópia? | Observação |
+|---|---|---|
+| `ImageView::from_image_buffer(&buffer)` | não | visão sobre os pixels do `ImageBuffer` |
+| `view.as_image_buffer()` | não | `None` se a visão tiver preenchimento entre linhas |
+| `view.to_image_buffer()` / `image.to_image_buffer()` | sim | `ImageBuffer` dono dos dados |
+| `Image::from_image_buffer(&buffer)` | sim | necessária para obter o alinhamento de 64 bytes |
+
+Formatos com equivalente em `image` (trait `ImagePixel`): `L8`, `La8`, `Rgb8`, `Rgba8`, `L16`, `RgbF32`.
+
+### Feature `ndarray`
+
+Eixos na ordem `[altura, largura, canais]`.
+
+| Método | Cópia? | Observação |
+|---|---|---|
+| `ImageView::from_array3(array.view())` | não | exige layout padrão; array fatiado ou transposto retorna `NonContiguous` |
+| `view.as_array3()` | não | funciona com qualquer stride: ele vira o passo do primeiro eixo |
+| `Image::from_array3(array.view())` | sim | aceita qualquer layout |
+| `image.to_array3()` | sim | `Array3` dono dos dados |
+
+<CodeBlock language="rust" title="examples/interop.rs">{Interop}</CodeBlock>
+
 ## Em construção
 
 | Item | Issue |
 |---|---|
-| interop com `image` e `ndarray` | [#35](https://github.com/Bappoz/perceptor/issues/35) |
 | `BufferPool` | [#36](https://github.com/Bappoz/perceptor/issues/36) |

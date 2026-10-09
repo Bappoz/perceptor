@@ -11,8 +11,14 @@ repository.workspace = true
 default = ["rayon"]
 # Iteradores paralelos por linha e por faixa
 rayon = ["dep:rayon"]
+# Conversões de/para `image::ImageBuffer`
+image = ["dep:image"]
+# Conversões de/para `ndarray::ArrayView3`
+ndarray = ["dep:ndarray"]
 
 [dependencies]
+image = { workspace = true, optional = true }
+ndarray = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }
 bytemuck.workspace = true
 thiserror.workspace = true
