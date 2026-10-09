@@ -30,6 +30,8 @@ anyhow = "1.0"
 thiserror = "2.0"
 # Logging/tracing estruturado
 tracing = "0.1"
+# Testes de propriedade
+proptest = "1.11"
 # Diretórios temporários em testes
 tempfile = "3"
 

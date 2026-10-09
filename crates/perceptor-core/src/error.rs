@@ -31,6 +31,31 @@ pub enum Error {
         channels: usize,
     },
 
+    /// Dimensão zero, ou tamanho total que não cabe em memória endereçável.
+    #[error("dimensões inválidas: {width}×{height}")]
+    InvalidDimensions {
+        /// Largura pedida.
+        width: usize,
+        /// Altura pedida.
+        height: usize,
+    },
+
+    /// O alocador não pôde reservar o buffer.
+    #[error("falha ao alocar {bytes} bytes")]
+    Allocation {
+        /// Tamanho pedido.
+        bytes: usize,
+    },
+
+    /// A quantidade de pixels fornecida não corresponde às dimensões.
+    #[error("esperados {expected} pixels, recebidos {actual}")]
+    DimensionMismatch {
+        /// `width · height`.
+        expected: usize,
+        /// Pixels fornecidos.
+        actual: usize,
+    },
+
     /// O comprimento do buffer não corresponde a um número inteiro de pixels.
     #[error("buffer com {len} valores não é múltiplo de {channels} canal(is)")]
     BufferLength {
@@ -128,6 +153,24 @@ mod tests {
             err.to_string(),
             "buffer com 7 valores não é múltiplo de 3 canal(is)"
         );
+    }
+
+    #[test]
+    fn image_construction_errors_report_their_numbers() {
+        let dims = Error::InvalidDimensions {
+            width: 0,
+            height: 5,
+        };
+        assert_eq!(dims.to_string(), "dimensões inválidas: 0×5");
+        assert_eq!(
+            Error::Allocation { bytes: 64 }.to_string(),
+            "falha ao alocar 64 bytes"
+        );
+        let mismatch = Error::DimensionMismatch {
+            expected: 4,
+            actual: 3,
+        };
+        assert_eq!(mismatch.to_string(), "esperados 4 pixels, recebidos 3");
     }
 
     #[test]
