@@ -6,7 +6,7 @@
 //! InputStage → PreProcessStage → ProcessStage → PostProcessStage → OutputStage
 //! ```
 //!
-//! Sistemas são registrados em um desses labels. O [`Pipeline`] executa
+//! Sistemas são registrados em um desses labels. O [`Pipeline`](crate::Pipeline) executa
 //! os schedules nessa ordem a cada tick.
 
 use bevy_ecs::schedule::ScheduleLabel;

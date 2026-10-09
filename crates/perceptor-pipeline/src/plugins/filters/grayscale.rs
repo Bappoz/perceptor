@@ -24,12 +24,12 @@ pub struct GrayscaleTag;
 
 /// Sistema ECS: converte frames RGB em luminância (grayscale).
 ///
-/// Registrado no `ProcessStage` pelo [`FiltersPlugin`].
+/// Registrado no `ProcessStage` pelo [`FiltersPlugin`](crate::plugins::filters::FiltersPlugin).
 pub fn grayscale_system(
     mut query: Query<(Entity, &mut Frame), Without<GrayscaleTag>>,
     mut commands: Commands,
 ) {
-    for (entity, mut frame) in query.iter_mut() {
+    for (entity, mut frame) in &mut query {
         if frame.channels() != 3 {
             continue; // Ignora frames que não são RGB
         }

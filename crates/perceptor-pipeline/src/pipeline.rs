@@ -9,10 +9,7 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
 use tracing::{debug, info};
 
-use crate::{
-    plugin::Plugin,
-    schedule::{InputStage, OutputStage, PostProcessStage, PreProcessStage, ProcessStage},
-};
+use crate::plugin::Plugin;
 
 /// Motor principal do pipeline de CV.
 ///
@@ -30,13 +27,16 @@ pub struct Pipeline {
 
 impl Pipeline {
     /// Retorna um builder para configurar o pipeline com plugins e sistemas.
+    #[must_use]
     pub fn builder() -> PipelineBuilder {
         PipelineBuilder::default()
     }
 
     /// Executa um único tick: roda todos os stages em ordem.
     ///
-    /// Retorna `Err` se algum sistema falhar de forma irrecuperável.
+    /// # Errors
+    /// Hoje nunca falha: sistemas registram erros em log. A propagação real
+    /// de erros é o objetivo da issue #31.
     pub fn tick(&mut self) -> Result<()> {
         debug!("pipeline tick: InputStage");
         self.input_schedule.run(&mut self.world);
@@ -67,6 +67,9 @@ impl Pipeline {
     /// Loop principal: executa ticks até que um sistema de saída sinalize parada.
     ///
     /// A condição de parada é controlada pelo recurso [`PipelineState`].
+    ///
+    /// # Errors
+    /// Propaga o primeiro erro retornado por [`Pipeline::tick`].
     pub fn run(&mut self) -> Result<()> {
         info!("Perceptor pipeline started");
         loop {
@@ -85,6 +88,8 @@ impl Pipeline {
     pub fn world(&self) -> &World {
         &self.world
     }
+
+    /// Acesso mutável ao `World` (para injetar entidades e recursos).
     pub fn world_mut(&mut self) -> &mut World {
         &mut self.world
     }
@@ -120,6 +125,7 @@ impl PipelineBuilder {
     ///
     /// O plugin receberá `&mut self` do builder e poderá adicionar sistemas.
     /// Plugins duplicados (mesmo `name()`) são ignorados com aviso.
+    #[must_use]
     pub fn add_plugin<P: Plugin>(mut self, plugin: P) -> Self {
         plugin.build(&mut self);
         self.plugins.push(Box::new(plugin));
@@ -178,6 +184,7 @@ impl PipelineBuilder {
         }
     }
 
+    /// Acesso mutável ao `World` durante a construção (para plugins inserirem recursos).
     pub fn world_mut(&mut self) -> &mut World {
         &mut self.world
     }

@@ -8,9 +8,9 @@
 //! | `gpu`        | `wgpu`       | WebGPU compute       |
 //!
 //! # Design
-//! O [`InferenceSystem`] recebe um `Model` como recurso e itera sobre
-//! frames com [`SobelTag`] (ou qualquer predicado), rodando inferência
-//! e anexando um componente [`Prediction`] à entidade.
+//! O [`inference_system`] recebe um `Model` como recurso e itera sobre
+//! frames com [`SobelTag`](crate::plugins::filters::sobel::SobelTag) (ou qualquer predicado), rodando inferência
+//! e anexando um componente [`Prediction`](inference::Prediction) à entidade.
 
 pub mod inference;
 
@@ -28,7 +28,9 @@ pub struct MlPlugin {
 }
 
 impl Plugin for MlPlugin {
-    fn name(&self) -> &str { "MlPlugin" }
+    fn name(&self) -> &'static str {
+        "MlPlugin"
+    }
 
     fn build(&self, builder: &mut PipelineBuilder) {
         builder.add_post_process_system(inference_system);

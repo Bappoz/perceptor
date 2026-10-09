@@ -38,6 +38,7 @@ pub struct Frame {
 
 impl Frame {
     /// Cria um frame a partir de tensor já construído.
+    #[must_use]
     pub fn new(meta: FrameMeta, data: Array3<u8>) -> Self {
         debug_assert_eq!(
             data.ndim(),
@@ -52,35 +53,52 @@ impl Frame {
     ///
     /// A imagem é sempre convertida para RGB8 (3 canais).
     /// Para preservar o canal alpha, use [`Frame::from_dynamic_image_rgba`].
+    ///
+    /// # Panics
+    /// Não ocorre na prática: o buffer RGB8 tem exatamente `h·w·3` bytes.
+    #[must_use]
     pub fn from_dynamic_image(meta: FrameMeta, img: DynamicImage) -> Self {
         let rgb = img.into_rgb8();
         let (w, h) = rgb.dimensions();
-        let data = Array3::from_shape_vec(
-            (h as usize, w as usize, 3),
-            rgb.into_raw(),
-        )
-        .expect("conversão DynamicImage→Array3 falhou: shape inválido");
+        let data = Array3::from_shape_vec((h as usize, w as usize, 3), rgb.into_raw())
+            .expect("conversão DynamicImage→Array3 falhou: shape inválido");
         Self::new(meta, data)
     }
 
     /// Converte um [`DynamicImage`] preservando canal alpha (RGBA, 4 canais).
+    ///
+    /// # Panics
+    /// Não ocorre na prática: o buffer RGBA8 tem exatamente `h·w·4` bytes.
+    #[must_use]
     pub fn from_dynamic_image_rgba(meta: FrameMeta, img: DynamicImage) -> Self {
         let rgba = img.into_rgba8();
         let (w, h) = rgba.dimensions();
-        let data = Array3::from_shape_vec(
-            (h as usize, w as usize, 4),
-            rgba.into_raw(),
-        )
-        .expect("conversão DynamicImage→Array3 RGBA falhou");
+        let data = Array3::from_shape_vec((h as usize, w as usize, 4), rgba.into_raw())
+            .expect("conversão DynamicImage→Array3 RGBA falhou");
         Self::new(meta, data)
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
 
-    pub fn height(&self) -> usize   { self.data.shape()[0] }
-    pub fn width(&self) -> usize    { self.data.shape()[1] }
-    pub fn channels(&self) -> usize { self.data.shape()[2] }
+    /// Altura em pixels (eixo 0).
+    #[must_use]
+    pub fn height(&self) -> usize {
+        self.data.shape()[0]
+    }
+    /// Largura em pixels (eixo 1).
+    #[must_use]
+    pub fn width(&self) -> usize {
+        self.data.shape()[1]
+    }
+    /// Número de canais (eixo 2).
+    #[must_use]
+    pub fn channels(&self) -> usize {
+        self.data.shape()[2]
+    }
 
     /// Retorna `true` se o frame é grayscale (1 canal).
-    pub fn is_grayscale(&self) -> bool { self.channels() == 1 }
+    #[must_use]
+    pub fn is_grayscale(&self) -> bool {
+        self.channels() == 1
+    }
 }

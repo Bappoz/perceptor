@@ -44,7 +44,7 @@ pub struct IoPlugin {
 }
 
 impl Plugin for IoPlugin {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "IoPlugin"
     }
 

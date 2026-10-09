@@ -16,7 +16,7 @@ use crate::frame::{Frame, FrameMeta};
 use crate::plugins::io::IoConfig;
 
 /// Sistema ECS: lê um frame da fonte configurada e o spawna como entidade.
-/// Registrado no `InputStage` pelo [`IoPlugin`].
+/// Registrado no `InputStage` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
 pub fn image_reader_system(
     mut commands: Commands,
     mut config: ResMut<IoConfig>,
