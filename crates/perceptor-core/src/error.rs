@@ -2,6 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::Rect;
+
 /// Causa arbitrária preservada dentro de um [`Error`].
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -54,6 +56,44 @@ pub enum Error {
         expected: usize,
         /// Pixels fornecidos.
         actual: usize,
+    },
+
+    /// O stride é menor que uma linha de pixels.
+    #[error("stride {stride} menor que o mínimo de {min} subpixels por linha")]
+    InvalidStride {
+        /// Stride informado, em subpixels.
+        stride: usize,
+        /// `width · canais`.
+        min: usize,
+    },
+
+    /// O buffer não contém todas as linhas descritas pela geometria.
+    #[error("buffer com {actual} subpixels, mas a geometria exige {required}")]
+    BufferTooSmall {
+        /// Subpixels necessários.
+        required: usize,
+        /// Subpixels disponíveis.
+        actual: usize,
+    },
+
+    /// A região pedida não cabe na imagem.
+    #[error("região {region} fora de uma imagem {width}×{height}")]
+    OutOfBounds {
+        /// Região pedida.
+        region: Rect,
+        /// Largura da imagem.
+        width: usize,
+        /// Altura da imagem.
+        height: usize,
+    },
+
+    /// Duas imagens que deveriam ter as mesmas dimensões não têm.
+    #[error("dimensões {}×{} diferentes das esperadas {}×{}", .actual.0, .actual.1, .expected.0, .expected.1)]
+    ShapeMismatch {
+        /// `(largura, altura)` esperadas.
+        expected: (usize, usize),
+        /// `(largura, altura)` recebidas.
+        actual: (usize, usize),
     },
 
     /// O comprimento do buffer não corresponde a um número inteiro de pixels.
@@ -171,6 +211,39 @@ mod tests {
             actual: 3,
         };
         assert_eq!(mismatch.to_string(), "esperados 4 pixels, recebidos 3");
+    }
+
+    #[test]
+    fn view_errors_report_their_numbers() {
+        assert_eq!(
+            Error::InvalidStride { stride: 5, min: 6 }.to_string(),
+            "stride 5 menor que o mínimo de 6 subpixels por linha"
+        );
+        let small = Error::BufferTooSmall {
+            required: 12,
+            actual: 8,
+        };
+        assert_eq!(
+            small.to_string(),
+            "buffer com 8 subpixels, mas a geometria exige 12"
+        );
+        let oob = Error::OutOfBounds {
+            region: Rect::new(3, 0, 2, 1),
+            width: 4,
+            height: 4,
+        };
+        assert_eq!(
+            oob.to_string(),
+            "região 2×1 em (3, 0) fora de uma imagem 4×4"
+        );
+        let shape = Error::ShapeMismatch {
+            expected: (4, 4),
+            actual: (2, 2),
+        };
+        assert_eq!(
+            shape.to_string(),
+            "dimensões 2×2 diferentes das esperadas 4×4"
+        );
     }
 
     #[test]
