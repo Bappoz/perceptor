@@ -62,6 +62,8 @@ anyhow.workspace = true
 # `#[derive(Component)]` nos exemplos expande para caminhos `bevy_ecs::`
 bevy_ecs.workspace = true
 image.workspace = true
+# `rayon::prelude` nos exemplos de iteração paralela
+rayon.workspace = true
 tempfile.workspace = true
 
 [features]
