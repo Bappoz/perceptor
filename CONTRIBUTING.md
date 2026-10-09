@@ -13,6 +13,7 @@
 ```bash
 just ci           # fmt-check → clippy -D warnings → test → rustdoc → build
 just docs-build   # quando tocar website/ ou examples/
+just cov          # cobertura por arquivo (requer cargo-llvm-cov)
 ```
 
 O CI roda os mesmos comandos, mais `just miri` (requer `rustup +nightly component add miri`). PR com gate vermelho não é revisado.
