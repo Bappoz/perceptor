@@ -36,7 +36,7 @@ impl Pipeline {
     ///
     /// # Errors
     /// Hoje nunca falha: sistemas registram erros em log. A propagação real
-    /// de erros é o objetivo da issue #31.
+    /// de erros é o objetivo da issue #40.
     pub fn tick(&mut self) -> Result<()> {
         debug!("pipeline tick: InputStage");
         self.input_schedule.run(&mut self.world);
