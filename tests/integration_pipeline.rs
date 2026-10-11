@@ -7,13 +7,14 @@
 use perceptor::{
     core::{Image, PixelFormat, Rgb8},
     pipeline::{
-        frame::{Frame, FrameMeta},
+        frame::Frame,
         pipeline::Pipeline,
         plugins::filters::{
             grayscale::GrayscaleTag,
             sobel::{SobelMap, SobelTag},
             FiltersPlugin,
         },
+        testing::TestPipeline,
     },
 };
 
@@ -59,28 +60,23 @@ fn io_pipeline_writes_grayscale_output() {
 /// Pipeline de filtros com frame injetado: grayscale e Sobel no mesmo tick.
 #[test]
 fn filter_chain_grayscale_then_sobel() {
-    let mut pipeline = Pipeline::builder()
-        .add_plugin(FiltersPlugin::all())
-        .build()
-        .unwrap();
+    let mut test = TestPipeline::with_plugin(FiltersPlugin::all());
 
     // Frame RGB 8×8 com borda horizontal: metade branca / metade preta
-    let data = Image::from_fn(8, 8, |_, y| {
-        let v = if y < 4 { 255 } else { 0 };
-        Rgb8::new(v, v, v)
-    })
-    .unwrap();
-    let meta = FrameMeta::new(0, "test");
-    pipeline.world_mut().spawn(Frame::new(meta, data));
+    let frame = test.spawn(
+        Image::from_fn(8, 8, |_, y| {
+            let v = if y < 4 { 255 } else { 0 };
+            Rgb8::new(v, v, v)
+        })
+        .unwrap(),
+    );
 
     // Um tick basta: o Sobel é ordenado depois do grayscale e enxerga o `GrayscaleTag`.
-    pipeline.tick().unwrap();
+    test.tick().unwrap();
 
-    let world = pipeline.world_mut();
-    let mut q = world.query::<(&Frame, &GrayscaleTag, &SobelTag, &SobelMap)>();
-    // single() verifica implicitamente que existe exatamente 1 resultado
-    let (frame, _, _, sobel) = q.single(world).unwrap();
-    assert_eq!(frame.format(), PixelFormat::L8, "frame deve ser grayscale");
+    test.assert_has_all::<(GrayscaleTag, SobelTag, SobelMap)>(frame);
+    assert_eq!(test.frame(frame).format(), PixelFormat::L8);
+    let sobel = test.component::<SobelMap>(frame).unwrap();
     assert_eq!(sobel.magnitude.dimensions(), (8, 8));
     assert!(
         sobel.magnitude.row(4)[1..7].iter().any(|p| p.luma() > 100),

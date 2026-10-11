@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M2 — Pipeline v2 (em andamento)
 
+- `testing::TestPipeline`: harness headless que injeta frames, roda ticks e verifica componentes por entidade; os testes de grayscale e Sobel foram reescritos sobre ele ([#44](https://github.com/Bappoz/perceptor/issues/44)).
 - `PipelineMetrics`: latência por stage e por tick, fps e frames descartados; spans `tracing` `tick` e `stage`. Tudo atrás da feature `metrics` (padrão), mais `trace-systems` para um span por sistema. O pipeline passa a fixar o executor single-thread do `bevy_ecs` ([#43](https://github.com/Bappoz/perceptor/issues/43)).
 - `Frame` multi-formato: `data` passa de `Array3<u8>` para `FrameData`, com acesso tipado `as_image::<P>()` que retorna `FormatMismatch` em vez de entrar em pânico. `FrameMeta` usa `Arc<str>` e `Duration`. Os kernels `convert_to_gray` e `apply_sobel` operam sobre `ImageView`/`Image`, o escritor grava `La8` e `L16`, e `ndarray` sai de `perceptor-imgproc` e `perceptor-pipeline` ([#42](https://github.com/Bappoz/perceptor/issues/42)).
 - Contrato de `Plugin` cumprido: `PipelineBuilder::build()` passa a retornar `Result` e rejeita plugin duplicado ou dependência ausente (`Plugin::dependencies`); `Plugin::cleanup` recebe `&mut World` e é chamado em `Pipeline::shutdown()` ou no `Drop`, em ordem inversa de registro ([#41](https://github.com/Bappoz/perceptor/issues/41)).

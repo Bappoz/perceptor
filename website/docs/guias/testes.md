@@ -1,8 +1,8 @@
 ---
-title: Testando kernels
+title: Testando kernels e sistemas
 ---
 
-# Testando kernels
+# Testando kernels e sistemas
 
 Todo kernel novo segue o mesmo roteiro, com as ferramentas de `perceptor-testkit` (crate interna, `dev-dependency` de `perceptor-imgproc`, `perceptor-pipeline` e da fachada).
 
@@ -70,3 +70,61 @@ PERCEPTOR_UPDATE_GOLDEN=1 cargo test -p perceptor-imgproc
 ```
 
 Reescreve os arquivos em vez de compará-los. **Revise as imagens antes de commitar**: regenerar aceita qualquer saída como correta. Sem a variável, um golden ausente falha com a instrução acima.
+
+## Testando sistemas e plugins
+
+Kernels são testados direto, como funções. Para o que depende do ECS — um sistema, ou um plugin inteiro — use o harness `perceptor_pipeline::testing::TestPipeline`: ele injeta frames a partir de imagens, roda ticks e verifica os componentes de cada entidade, sem I/O.
+
+```rust
+use perceptor_pipeline::testing::TestPipeline;
+
+#[test]
+fn converts_rgb_frames_and_tags_them() {
+    let mut test = TestPipeline::with_systems(Stage::Process, grayscale_system);
+    let frame = test.spawn(Image::filled(2, 2, Rgb8::new(255, 0, 0)).unwrap());
+
+    test.tick().unwrap();
+
+    test.assert_has::<GrayscaleTag>(frame);
+    assert_eq!(test.image::<L8>(frame).as_pixels(), [L8::new(76); 4]);
+}
+```
+
+O mesmo teste sem o harness precisa montar `World`, `Schedule` e recursos à mão e consultar o resultado com uma query.
+
+### Construção
+
+| Construtor | Uso |
+|---|---|
+| `TestPipeline::new()` | pipeline vazio |
+| `TestPipeline::with_systems(stage, sistemas)` | um sistema, uma tupla ou `(a, b).chain()` |
+| `TestPipeline::with_plugin(plugin)` | um plugin sem dependências |
+| `TestPipeline::from_builder(builder)` | política de erro, vários plugins, recursos próprios |
+
+### Frames
+
+| Método | Efeito |
+|---|---|
+| `spawn(imagem)` | cria um frame com fonte `"test"` e índice sequencial; devolve a `Entity` |
+| `spawn_frame(frame)` | idem, com metadados escolhidos pelo teste |
+| `frames()` | entidades com `Frame` ainda vivas, por índice |
+| `frame(e)` / `image::<P>(e)` | o frame, ou a imagem já no formato `P` |
+| `component::<C>(e)` | `Option<&C>` |
+
+Imagens de entrada vêm de [`patterns`](#imagens-sintéticas) ou dos construtores de `Image`.
+
+### Verificações
+
+| Método | Falha quando |
+|---|---|
+| `assert_has::<C>(e)` | `e` não tem `C` |
+| `assert_lacks::<C>(e)` | `e` tem `C` |
+| `assert_has_all::<(A, B, C)>(e)` | falta algum; a mensagem lista os ausentes |
+| `assert_lacks_all::<(A, B)>(e)` | tem algum; a mensagem lista os presentes |
+| `assert_alive(e)` / `assert_despawned(e)` | a entidade não está no estado esperado |
+
+As falhas apontam para a linha do teste. `image::<P>` com formato errado falha mostrando o `FormatMismatch`.
+
+`tick()` e `run_ticks(n)` devolvem o `Result` do pipeline, então a [política de erro](../conceitos/pipeline-e-stages.md#tratamento-de-erros) do builder vale no teste; `errors()` expõe o que os sistemas reportaram. Para o que o harness não cobre, `world_mut()` e `pipeline()` dão acesso direto.
+
+Para um componente inserido por um sistema que não está no teste (ex.: o `GrayscaleTag` que o Sobel exige), insira-o à mão: `test.world_mut().entity_mut(frame).insert(GrayscaleTag)`.

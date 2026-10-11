@@ -60,25 +60,46 @@ pub fn grayscale_system(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frame::FrameMeta;
-    use perceptor_core::{Image, PixelFormat};
+    use crate::schedule::Stage;
+    use crate::testing::TestPipeline;
+    use perceptor_core::{Image, PixelFormat, L8};
 
     #[test]
-    fn grayscale_system_tags_entity() {
-        let mut world = World::new();
-        world.init_resource::<PipelineErrors>();
+    fn converts_rgb_frames_and_tags_them() {
+        let mut test = TestPipeline::with_systems(Stage::Process, grayscale_system);
+        let frame = test.spawn(Image::filled(2, 2, Rgb8::new(255, 0, 0)).unwrap());
 
-        let data = Image::filled(2, 2, Rgb8::new(200, 200, 200)).unwrap();
-        world.spawn(Frame::new(FrameMeta::new(0, "test"), data));
+        test.tick().unwrap();
 
-        // Roda o sistema diretamente no world
-        let mut schedule = Schedule::default();
-        schedule.add_systems(grayscale_system);
-        schedule.run(&mut world);
+        test.assert_has::<GrayscaleTag>(frame);
+        assert_eq!(test.frame(frame).format(), PixelFormat::L8);
+        // R puro: 0.299 · 255 truncado.
+        assert_eq!(test.image::<L8>(frame).as_pixels(), [L8::new(76); 4]);
+    }
 
-        // Verifica tag + shape do frame convertido
-        let mut q = world.query::<(&Frame, &GrayscaleTag)>();
-        let (frame, _) = q.single(&world).unwrap();
-        assert_eq!(frame.format(), PixelFormat::L8);
+    #[test]
+    fn ignores_frames_that_are_not_rgb() {
+        let mut test = TestPipeline::with_systems(Stage::Process, grayscale_system);
+        let frame = test.spawn(Image::filled(2, 2, L8::new(9)).unwrap());
+
+        test.tick().unwrap();
+
+        test.assert_lacks::<GrayscaleTag>(frame);
+        assert_eq!(test.image::<L8>(frame).as_pixels(), [L8::new(9); 4]);
+        assert!(test.errors().is_empty());
+    }
+
+    #[test]
+    fn does_not_reprocess_a_tagged_frame() {
+        let mut test = TestPipeline::with_systems(Stage::Process, grayscale_system);
+        let frame = test.spawn(Image::<Rgb8>::new(2, 2).unwrap());
+        test.tick().unwrap();
+
+        // Um sistema posterior devolve o frame a RGB; o tag impede nova conversão.
+        test.world_mut().get_mut::<Frame>(frame).unwrap().data =
+            Image::<Rgb8>::new(2, 2).unwrap().into();
+        test.tick().unwrap();
+
+        assert_eq!(test.frame(frame).format(), PixelFormat::Rgb8);
     }
 }

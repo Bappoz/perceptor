@@ -67,7 +67,7 @@ Schedule único, erros, plugins, Frame multi-formato, métricas.
 - [x] #41 feat(pipeline): deduplicação, dependências e cleanup de plugins
 - [x] #42 feat(pipeline): Frame multi-formato sobre Image<P>
 - [x] #43 feat(pipeline): métricas e spans de tracing por stage e sistema
-- [ ] #44 feat(pipeline): harness de teste headless para sistemas e plugins
+- [x] #44 feat(pipeline): harness de teste headless para sistemas e plugins
 - [ ] #45 feat(pipeline): condições de parada (fim de fonte, limite de frames, sinal)
 - [ ] #46 feat(pipeline): adaptador para registrar kernels puros como sistemas
 
