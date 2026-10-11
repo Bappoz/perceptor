@@ -18,7 +18,8 @@ fn image_reader_spawns_frame_from_fixture() {
             format: ImageFormat::Png,
             keep_frames: true,
         })
-        .build();
+        .build()
+        .unwrap();
 
     pipeline.tick().unwrap();
 

@@ -20,7 +20,7 @@
 //!     let mut pipeline = Pipeline::builder()
 //!         .add_plugin(IoPlugin::default())
 //!         .add_plugin(FiltersPlugin::default())
-//!         .build();
+//!         .build()?;
 //!
 //!     pipeline.run()?;
 //!     Ok(())

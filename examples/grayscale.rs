@@ -23,7 +23,7 @@ fn main() -> anyhow::Result<()> {
             enable_grayscale: true,
             enable_sobel: false,
         })
-        .build();
+        .build()?;
 
     // O IoPlugin lê um frame por tick e sinaliza parada após escrever a saída.
     pipeline.run()?;

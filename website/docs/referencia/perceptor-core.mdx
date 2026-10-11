@@ -35,6 +35,8 @@ Todas as crates do Perceptor retornam `perceptor_core::Result<T>`, um alias para
 | `OutOfBounds { region, width, height }` | região fora da imagem |
 | `Decode { path, source }` | falha ao ler ou decodificar uma imagem |
 | `Encode { path, source }` | falha ao codificar ou gravar uma imagem |
+| `DuplicatePlugin { name }` | dois plugins com o mesmo nome no pipeline |
+| `MissingPluginDependency { plugin, dependency }` | um plugin depende de outro que não foi registrado |
 
 O enum é `#[non_exhaustive]`: um `match` fora da crate precisa de um braço `_`. `Decode` e `Encode` preservam o erro original em `source()`.
 

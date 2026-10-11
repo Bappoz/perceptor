@@ -41,7 +41,7 @@ impl Plugin for InvertPlugin {
 }
 
 fn main() -> anyhow::Result<()> {
-    let mut pipeline = Pipeline::builder().add_plugin(InvertPlugin).build();
+    let mut pipeline = Pipeline::builder().add_plugin(InvertPlugin).build()?;
 
     let meta = FrameMeta {
         index: 0,

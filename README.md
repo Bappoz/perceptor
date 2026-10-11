@@ -34,7 +34,7 @@ fn main() -> anyhow::Result<()> {
             enable_grayscale: true,
             enable_sobel: false,
         })
-        .build();
+        .build()?;
 
     pipeline.run()?;
     Ok(())

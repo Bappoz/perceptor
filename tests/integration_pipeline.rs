@@ -42,7 +42,8 @@ fn io_pipeline_writes_grayscale_output() {
             ..Default::default()
         })
         .add_plugin(FiltersPlugin::all())
-        .build();
+        .build()
+        .unwrap();
 
     pipeline.tick().unwrap();
 
@@ -58,7 +59,10 @@ fn io_pipeline_writes_grayscale_output() {
 /// Pipeline de filtros com frame injetado: grayscale e Sobel no mesmo tick.
 #[test]
 fn filter_chain_grayscale_then_sobel() {
-    let mut pipeline = Pipeline::builder().add_plugin(FiltersPlugin::all()).build();
+    let mut pipeline = Pipeline::builder()
+        .add_plugin(FiltersPlugin::all())
+        .build()
+        .unwrap();
 
     // Frame RGB 8×8 com borda horizontal: metade branca / metade preta
     let mut flat = vec![0u8; 8 * 8 * 3];
@@ -119,7 +123,7 @@ fn io_pipeline_computes_sobel_before_the_frame_is_despawned() {
         Stage::Output,
         |maps: Query<&SobelMap>, mut seen: ResMut<SobelSeen>| seen.0 += maps.iter().count(),
     );
-    let mut pipeline = builder.build();
+    let mut pipeline = builder.build().unwrap();
 
     pipeline.tick().unwrap();
     pipeline.tick().unwrap();

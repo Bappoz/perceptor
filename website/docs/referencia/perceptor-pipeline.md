@@ -10,14 +10,14 @@ Orquestração ECS sobre `bevy_ecs`.
 
 | Item | Descrição |
 |---|---|
-| `Pipeline` | dono do `World` e do schedule; `tick()`, `run()`, `errors()`, `world()`, `world_mut()` |
-| `PipelineBuilder` | `add_plugin`, `add_*_system`, `with_max_ticks`, `with_error_policy`, `build` |
+| `Pipeline` | dono do `World` e do schedule; `tick()`, `run()`, `shutdown()`, `errors()`, `world()`, `world_mut()` |
+| `PipelineBuilder` | `add_plugin`, `add_*_system`, `with_max_ticks`, `with_error_policy`, `build() -> Result<Pipeline>` |
 | `PipelineState` | recurso com `tick_count` e `should_stop` |
 | `ErrorPolicy` | `FailFast` (padrão), `SkipFrame`, `Continue` |
 | `PipelineErrors` | recurso com os erros do tick: `report`, `report_frame`, `iter`, `len`, `total`, `policy` |
 | `SystemError` | `system`, `frame: Option<Entity>`, `error` |
 | `fallible(sistema)` | adapta um sistema que retorna `Result<()>` |
-| `Plugin` | trait de extensão |
+| `Plugin` | trait de extensão: `name`, `dependencies`, `build`, `finish`, `cleanup` |
 | `Frame` | componente com `meta: FrameMeta` e `data: Array3<u8>` |
 | `FrameMeta` | `index`, `timestamp_us`, `source` |
 
