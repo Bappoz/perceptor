@@ -8,11 +8,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-perceptor-core = { workspace = true, features = ["image", "ndarray"] }
+perceptor-core = { workspace = true, features = ["image"] }
 perceptor-imgproc.workspace = true
 bevy_ecs.workspace = true
 image.workspace = true
-ndarray.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]

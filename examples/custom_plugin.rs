@@ -4,12 +4,14 @@
 //! cargo run --example custom_plugin
 //! ```
 
-use perceptor::pipeline::{frame::FrameMeta, pipeline::PipelineBuilder};
+use perceptor::pipeline::pipeline::PipelineBuilder;
 use perceptor::prelude::*;
 
-/// Kernel: função pura, sem ECS.
-fn invert(input: &Array3<u8>) -> Array3<u8> {
-    input.mapv(|v| 255 - v)
+/// Kernel: função pura, sem ECS. Opera no lugar, sobre qualquer visão `L8`.
+fn invert(mut image: ImageViewMut<'_, L8>) {
+    for pixel in image.pixels_mut() {
+        *pixel = L8::new(255 - pixel.luma());
+    }
 }
 
 /// Marcador que evita reprocessar o mesmo frame nos ticks seguintes.
@@ -22,7 +24,11 @@ fn invert_system(
     mut commands: Commands,
 ) {
     for (entity, mut frame) in &mut query {
-        frame.data = invert(&frame.data);
+        // Acesso tipado: frames em outro formato são ignorados.
+        let Ok(image) = frame.as_image_mut::<L8>() else {
+            continue;
+        };
+        invert(image.view_mut());
         commands.entity(entity).insert(InvertTag);
     }
 }
@@ -43,19 +49,17 @@ impl Plugin for InvertPlugin {
 fn main() -> anyhow::Result<()> {
     let mut pipeline = Pipeline::builder().add_plugin(InvertPlugin).build()?;
 
-    let meta = FrameMeta {
-        index: 0,
-        timestamp_us: 0,
-        source: "sintético".into(),
-    };
-    let data = Array3::from_shape_vec((1, 2, 1), vec![0u8, 255])?;
-    pipeline.world_mut().spawn(Frame::new(meta, data));
+    let data = Image::from_pixels(2, 1, &[L8::new(0), L8::new(255)])?;
+    pipeline
+        .world_mut()
+        .spawn(Frame::new(FrameMeta::new(0, "sintético"), data));
 
     pipeline.tick()?;
 
     let world = pipeline.world_mut();
     let frame = world.query::<&Frame>().single(world)?;
-    assert_eq!(frame.data.as_slice(), Some(&[255u8, 0][..]));
-    println!("pixels invertidos: {:?}", frame.data.as_slice());
+    let pixels = frame.as_image::<L8>()?.as_pixels();
+    assert_eq!(pixels, [L8::new(255), L8::new(0)]);
+    println!("pixels invertidos: {pixels:?}");
     Ok(())
 }

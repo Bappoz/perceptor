@@ -18,15 +18,16 @@ Orquestração ECS sobre `bevy_ecs`.
 | `SystemError` | `system`, `frame: Option<Entity>`, `error` |
 | `fallible(sistema)` | adapta um sistema que retorna `Result<()>` |
 | `Plugin` | trait de extensão: `name`, `dependencies`, `build`, `finish`, `cleanup` |
-| `Frame` | componente com `meta: FrameMeta` e `data: Array3<u8>` |
-| `FrameMeta` | `index`, `timestamp_us`, `source` |
+| `Frame` | componente com `meta: FrameMeta` e `data: FrameData`; `as_image::<P>()`, `as_image_mut::<P>()`, `format()`, `width()`, `height()`, `channels()` |
+| `FrameData` | enum com uma `Image<P>` por formato de pixel; `From<Image<P>>`, `as_image`, `into_image`, `as_bytes` |
+| `FrameMeta` | `index`, `timestamp: Duration`, `source: Arc<str>`; `FrameMeta::new(index, source)` |
 
 ## Funções de I/O
 
 | Função | Descrição |
 |---|---|
-| `read_frame(path, index) -> Result<Frame>` | decodifica uma imagem como frame RGB |
-| `write_frame(frame, path, format) -> Result<()>` | grava frames de 1, 3 ou 4 canais em PNG ou JPEG |
+| `read_frame(path, index) -> Result<Frame>` | decodifica uma imagem como frame `Rgb8` |
+| `write_frame(frame, path, format) -> Result<()>` | grava frames `L8`, `La8`, `Rgb8`, `Rgba8` ou `L16` em PNG ou JPEG; os demais formatos dão `UnsupportedFormat` |
 
 Ambas ficam em `plugins::io` e podem ser usadas sem montar um pipeline.
 
@@ -40,7 +41,7 @@ Enum `Stage` (um `SystemSet`): `Input`, `PreProcess`, `Process`, `PostProcess`, 
 |---|---|---|
 | `GrayscaleTag` | `grayscale_system` | marcador |
 | `SobelTag` | `sobel_system` | marcador |
-| `SobelMap` | `sobel_system` | `magnitude: Array3<u8>` |
+| `SobelMap` | `sobel_system` | `magnitude: Image<L8>` |
 | `Prediction` | `inference_system` | `scores`, `class_id`, `confidence` (valores vazios hoje) |
 
 ## Plugins

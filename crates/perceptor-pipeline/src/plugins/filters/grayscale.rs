@@ -7,11 +7,12 @@
 //! ```
 //!
 //! # Comportamento ECS
-//! Itera sobre todas as entidades com um `Frame` RGB (3 canais) e substitui
-//! `frame.data` por um tensor `[H, W, 1]` em grayscale.
+//! Itera sobre todas as entidades com um `Frame` em `Rgb8` e substitui
+//! `frame.data` por uma imagem `L8`. Frames em outros formatos são ignorados.
 //!
 
 use bevy_ecs::prelude::*;
+use perceptor_core::Rgb8;
 use perceptor_imgproc::grayscale::convert_to_gray;
 use tracing::trace;
 
@@ -33,9 +34,9 @@ pub fn grayscale_system(
     mut errors: ResMut<PipelineErrors>,
 ) {
     for (entity, mut frame) in &mut query {
-        if frame.channels() != 3 {
+        let Ok(rgb) = frame.as_image::<Rgb8>() else {
             continue; // Ignora frames que não são RGB
-        }
+        };
 
         trace!(
             entity = ?entity,
@@ -45,9 +46,9 @@ pub fn grayscale_system(
             frame.width()
         );
 
-        match convert_to_gray(&frame.data) {
+        match convert_to_gray(rgb.view()) {
             Ok(gray) => {
-                frame.data = gray;
+                frame.data = gray.into();
                 // Marca o frame como processado para evitar re-processamento
                 commands.entity(entity).insert(GrayscaleTag);
             }
@@ -60,20 +61,15 @@ pub fn grayscale_system(
 mod tests {
     use super::*;
     use crate::frame::FrameMeta;
-    use ndarray::Array3;
+    use perceptor_core::{Image, PixelFormat};
 
     #[test]
     fn grayscale_system_tags_entity() {
         let mut world = World::new();
         world.init_resource::<PipelineErrors>();
 
-        let meta = FrameMeta {
-            index: 0,
-            timestamp_us: 0,
-            source: "test".into(),
-        };
-        let data = Array3::from_elem((2, 2, 3), 200u8);
-        world.spawn(Frame::new(meta, data));
+        let data = Image::filled(2, 2, Rgb8::new(200, 200, 200)).unwrap();
+        world.spawn(Frame::new(FrameMeta::new(0, "test"), data));
 
         // Roda o sistema diretamente no world
         let mut schedule = Schedule::default();
@@ -83,6 +79,6 @@ mod tests {
         // Verifica tag + shape do frame convertido
         let mut q = world.query::<(&Frame, &GrayscaleTag)>();
         let (frame, _) = q.single(&world).unwrap();
-        assert_eq!(frame.channels(), 1);
+        assert_eq!(frame.format(), PixelFormat::L8);
     }
 }

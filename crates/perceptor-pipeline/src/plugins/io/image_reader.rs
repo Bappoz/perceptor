@@ -21,16 +21,13 @@ use crate::plugins::io::IoConfig;
 /// Lê e decodifica uma imagem do disco como [`Frame`] RGB.
 ///
 /// # Errors
-/// [`Error::Decode`] se o arquivo não existir, não puder ser lido ou não for
-/// uma imagem em formato suportado.
+/// - [`Error::Decode`] se o arquivo não existir, não puder ser lido ou não for
+///   uma imagem em formato suportado.
+/// - [`Error::Allocation`] se o buffer do frame não puder ser alocado.
 pub fn read_frame(path: &Path, index: u64) -> Result<Frame> {
     let img = image::open(path).map_err(|e| Error::decode(path, e))?;
-    let meta = FrameMeta {
-        index,
-        timestamp_us: 0,
-        source: path.to_string_lossy().into_owned(),
-    };
-    Ok(Frame::from_dynamic_image(meta, img))
+    let meta = FrameMeta::new(index, path.to_string_lossy());
+    Frame::from_dynamic_image(meta, img)
 }
 
 /// Sistema ECS: lê um frame da fonte configurada e o spawna como entidade.

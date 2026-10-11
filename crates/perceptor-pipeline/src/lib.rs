@@ -23,7 +23,7 @@ pub mod prelude;
 pub mod schedule;
 
 pub use errors::{fallible, ErrorPolicy, PipelineErrors, SystemError};
-pub use frame::{Frame, FrameMeta};
+pub use frame::{Frame, FrameData, FrameMeta, FramePixel};
 pub use pipeline::{despawn_processed_frames_system, Pipeline, PipelineBuilder, PipelineState};
 pub use plugin::Plugin;
 pub use schedule::Stage;

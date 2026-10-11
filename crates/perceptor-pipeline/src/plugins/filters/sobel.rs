@@ -14,11 +14,12 @@
 //! ```
 //!
 //! # Pré-requisito
-//! O frame **deve** ser grayscale (1 canal) e ter [`GrayscaleTag`]. Como o tag
+//! O frame **deve** estar em `L8` e ter [`GrayscaleTag`]. Como o tag
 //! é inserido via `Commands`, ordene os dois: `(grayscale_system, sobel_system).chain()`.
 //!
 
 use bevy_ecs::prelude::*;
+use perceptor_core::{Image, L8};
 use perceptor_imgproc::sobel::apply_sobel;
 use tracing::trace;
 
@@ -36,8 +37,8 @@ pub struct SobelTag;
 /// podem precisar dos dados originais.
 #[derive(Component, Debug)]
 pub struct SobelMap {
-    /// Magnitude do gradiente `[H, W, 1]`, valores `u8` em `[0, 255]`.
-    pub magnitude: ndarray::Array3<u8>,
+    /// Magnitude do gradiente, saturada em `[0, 255]`, nas dimensões do frame.
+    pub magnitude: Image<L8>,
 }
 
 /// Sistema ECS: computa o mapa de bordas Sobel para frames grayscale.
@@ -51,9 +52,9 @@ pub fn sobel_system(
     mut errors: ResMut<PipelineErrors>,
 ) {
     for (entity, frame) in query.iter() {
-        if frame.channels() != 1 {
+        let Ok(gray) = frame.as_image::<L8>() else {
             continue;
-        }
+        };
 
         trace!(
             entity = ?entity,
@@ -63,7 +64,7 @@ pub fn sobel_system(
             frame.width()
         );
 
-        match apply_sobel(&frame.data) {
+        match apply_sobel(gray.view()) {
             Ok(magnitude) => {
                 commands
                     .entity(entity)

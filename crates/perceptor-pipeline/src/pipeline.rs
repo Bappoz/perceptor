@@ -381,12 +381,11 @@ mod tests {
     struct Seen(Vec<&'static str>);
 
     fn test_frame() -> Frame {
-        let meta = FrameMeta {
-            index: 0,
-            timestamp_us: 0,
-            source: "test".into(),
-        };
-        Frame::new(meta, ndarray::Array3::zeros((2, 2, 1)))
+        let meta = FrameMeta::new(0, "test");
+        Frame::new(
+            meta,
+            perceptor_core::Image::<perceptor_core::L8>::new(2, 2).unwrap(),
+        )
     }
 
     #[test]

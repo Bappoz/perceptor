@@ -5,6 +5,7 @@
 //! mesmo tick.
 
 use perceptor::{
+    core::{Image, PixelFormat, Rgb8},
     pipeline::{
         frame::{Frame, FrameMeta},
         pipeline::Pipeline,
@@ -14,7 +15,6 @@ use perceptor::{
             FiltersPlugin,
         },
     },
-    prelude::Array3,
 };
 
 /// PNG 8×8 com borda horizontal nítida: metade superior branca, inferior preta.
@@ -65,22 +65,12 @@ fn filter_chain_grayscale_then_sobel() {
         .unwrap();
 
     // Frame RGB 8×8 com borda horizontal: metade branca / metade preta
-    let mut flat = vec![0u8; 8 * 8 * 3];
-    for y in 0..8usize {
-        let v = if y < 4 { 255u8 } else { 0u8 };
-        for x in 0..8usize {
-            let i = (y * 8 + x) * 3;
-            flat[i] = v;
-            flat[i + 1] = v;
-            flat[i + 2] = v;
-        }
-    }
-    let data = Array3::from_shape_vec((8, 8, 3), flat).unwrap();
-    let meta = FrameMeta {
-        index: 0,
-        timestamp_us: 0,
-        source: "test".into(),
-    };
+    let data = Image::from_fn(8, 8, |_, y| {
+        let v = if y < 4 { 255 } else { 0 };
+        Rgb8::new(v, v, v)
+    })
+    .unwrap();
+    let meta = FrameMeta::new(0, "test");
     pipeline.world_mut().spawn(Frame::new(meta, data));
 
     // Um tick basta: o Sobel é ordenado depois do grayscale e enxerga o `GrayscaleTag`.
@@ -90,10 +80,10 @@ fn filter_chain_grayscale_then_sobel() {
     let mut q = world.query::<(&Frame, &GrayscaleTag, &SobelTag, &SobelMap)>();
     // single() verifica implicitamente que existe exatamente 1 resultado
     let (frame, _, _, sobel) = q.single(world).unwrap();
-    assert_eq!(frame.channels(), 1, "frame deve ser grayscale (1 canal)");
-    assert_eq!(sobel.magnitude.shape(), &[8, 8, 1]);
+    assert_eq!(frame.format(), PixelFormat::L8, "frame deve ser grayscale");
+    assert_eq!(sobel.magnitude.dimensions(), (8, 8));
     assert!(
-        (1..7usize).any(|x| sobel.magnitude[[4, x, 0]] > 100),
+        sobel.magnitude.row(4)[1..7].iter().any(|p| p.luma() > 100),
         "borda horizontal em y=4 deve ter alta resposta Sobel"
     );
 }
