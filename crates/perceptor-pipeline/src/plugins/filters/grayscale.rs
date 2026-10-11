@@ -13,8 +13,9 @@
 
 use bevy_ecs::prelude::*;
 use perceptor_imgproc::grayscale::convert_to_gray;
-use tracing::{trace, warn};
+use tracing::trace;
 
+use crate::errors::PipelineErrors;
 use crate::frame::Frame;
 
 /// Componente marcador: indica que o frame foi convertido para grayscale.
@@ -25,9 +26,11 @@ pub struct GrayscaleTag;
 /// Sistema ECS: converte frames RGB em luminância (grayscale).
 ///
 /// Registrado em `Stage::Process` pelo [`FiltersPlugin`](crate::plugins::filters::FiltersPlugin).
+/// Falhas do kernel são reportadas em [`PipelineErrors`] como erro do frame.
 pub fn grayscale_system(
     mut query: Query<(Entity, &mut Frame), Without<GrayscaleTag>>,
     mut commands: Commands,
+    mut errors: ResMut<PipelineErrors>,
 ) {
     for (entity, mut frame) in &mut query {
         if frame.channels() != 3 {
@@ -48,7 +51,7 @@ pub fn grayscale_system(
                 // Marca o frame como processado para evitar re-processamento
                 commands.entity(entity).insert(GrayscaleTag);
             }
-            Err(e) => warn!(entity = ?entity, "grayscale_system: {e}"),
+            Err(e) => errors.report_frame("grayscale_system", entity, e),
         }
     }
 }
@@ -62,6 +65,7 @@ mod tests {
     #[test]
     fn grayscale_system_tags_entity() {
         let mut world = World::new();
+        world.init_resource::<PipelineErrors>();
 
         let meta = FrameMeta {
             index: 0,

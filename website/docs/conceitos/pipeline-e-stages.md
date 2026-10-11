@@ -73,4 +73,28 @@ Sistemas sem ordem entre si podem rodar em paralelo quando não disputam os mesm
 
 ## Tratamento de erros
 
-Kernels e funções de I/O retornam [`perceptor_core::Result`](../referencia/perceptor-core.mdx). Dentro do pipeline, porém, os sistemas ainda registram a falha em log (`tracing`) e seguem ou sinalizam parada; `tick()` não retorna erro. A propagação de erros com política configurável está planejada em [#40](https://github.com/Bappoz/perceptor/issues/40).
+Kernels e funções de I/O retornam [`perceptor_core::Result`](../referencia/perceptor-core.mdx). Um sistema ECS não tem para quem devolver esse `Result`, então o entrega ao recurso `PipelineErrors`:
+
+- **falha do sistema inteiro** (a fonte não abre, a configuração é inválida): o sistema retorna `Result<()>` e é registrado com `fallible(sistema)`;
+- **falha de um frame**: o sistema chama `errors.report_frame("nome", entidade, erro)` e segue para os próximos frames.
+
+O que acontece depois depende da `ErrorPolicy`, definida com `PipelineBuilder::with_error_policy`:
+
+| Política | Stages seguintes no tick | Frame com erro | `tick()` |
+|---|---|---|---|
+| `FailFast` (padrão) | não rodam | permanece no `World` | `Err` com o primeiro erro |
+| `SkipFrame` | rodam | removido ao fim do stage em que falhou | `Ok` |
+| `Continue` | rodam | segue pelos stages | `Ok` |
+
+`run()` propaga o `Err` de `tick()`, portanto só falha em `FailFast`.
+
+`pipeline.errors()` lista os erros do tick mais recente (sistema, frame e erro) e `total()` conta todos desde a criação do pipeline. A lista é esvaziada no início de cada tick. Em `FailFast`, o erro devolvido por `tick()` sai da lista; os demais do mesmo tick ficam nela.
+
+Detalhes que valem conhecer:
+
+- Em `FailFast` a interrupção é **por stage**: os outros sistemas do stage em que o erro ocorreu ainda rodam, e `Stage::Cleanup` não roda — os frames ficam no `World` para inspeção.
+- Em `SkipFrame`, um erro sem frame associado (`fallible`, `report`) só fica registrado.
+- Sistemas que recebem `ResMut<PipelineErrors>` não rodam em paralelo entre si.
+- Um `World` montado à mão para rodar `grayscale_system`, `sobel_system` ou `image_writer_system` precisa do recurso: `world.init_resource::<PipelineErrors>()`.
+
+Exemplo completo em [Sistemas que podem falhar](../guias/escrevendo-um-plugin.mdx#sistemas-que-podem-falhar).
