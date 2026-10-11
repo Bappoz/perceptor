@@ -94,6 +94,7 @@ dependencies = [
  "slotmap",
  "smallvec",
  "thiserror",
+ "tracing",
  "variadics_please",
 ]
 

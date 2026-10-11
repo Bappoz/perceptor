@@ -7,6 +7,13 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+default = ["metrics"]
+# `PipelineMetrics` e spans por stage: um marcador por fronteira entre stages
+metrics = []
+# Um span por sistema, emitido pelo próprio `bevy_ecs`
+trace-systems = ["bevy_ecs/trace"]
+
 [dependencies]
 perceptor-core = { workspace = true, features = ["image"] }
 perceptor-imgproc.workspace = true

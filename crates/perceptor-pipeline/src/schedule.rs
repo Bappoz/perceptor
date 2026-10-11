@@ -9,8 +9,9 @@
 //!
 //! Entre dois stages há um ponto de sincronização: os `Commands` emitidos em
 //! um stage já estão aplicados quando o seguinte começa. Dentro de um stage a
-//! ordem é livre (e pode ser paralela), a menos que os sistemas sejam
-//! ordenados com `.chain()`, `.before()` ou `.after()`.
+//! ordem é indefinida, a menos que os sistemas sejam ordenados com
+//! `.chain()`, `.before()` ou `.after()`. Os sistemas rodam um de cada vez,
+//! na thread que chamou `tick()`; o paralelismo fica dentro dos kernels.
 
 use bevy_ecs::schedule::SystemSet;
 

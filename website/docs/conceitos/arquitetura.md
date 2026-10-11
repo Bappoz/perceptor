@@ -112,7 +112,8 @@ Nenhum desses caminhos entra em pânico, e nenhum converte pixels implicitamente
 
 | Decisão | Motivo |
 |---|---|
-| `bevy_ecs` como motor | ECS maduro com scheduler paralelo, utilizável sem o restante do Bevy |
+| `bevy_ecs` como motor | ECS maduro, utilizável sem o restante do Bevy |
+| Executor single-thread | sistemas em sequência na thread de `tick()`: spans de stage corretos e latência previsível; o paralelismo fica nos kernels (rayon) |
 | Stages fixos como `SystemSet`s de um único schedule | ordem previsível entre leitura, processamento e saída, com ordenação fina dentro do stage |
 | `unsafe` confinado | restrito a módulos isolados (SIMD, hardware); `perceptor-core` usa `forbid(unsafe_code)` |
 | Referência escalar | toda otimização é validada contra a implementação simples |

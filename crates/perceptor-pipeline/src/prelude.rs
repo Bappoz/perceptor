@@ -11,6 +11,9 @@ pub use crate::{
     schedule::Stage,
 };
 
+#[cfg(feature = "metrics")]
+pub use crate::metrics::PipelineMetrics;
+
 // Plugins prontos para uso
 pub use crate::plugins::{filters::FiltersPlugin, io::IoPlugin, ml::MlPlugin};
 

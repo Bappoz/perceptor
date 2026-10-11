@@ -41,8 +41,7 @@ pub struct SystemError {
 /// Recurso com os erros reportados no tick mais recente.
 ///
 /// É esvaziado no início de cada tick; [`total`](Self::total) conta todos os
-/// erros desde a criação do pipeline. Sistemas que o recebem como `ResMut`
-/// não rodam em paralelo entre si.
+/// erros desde a criação do pipeline.
 #[derive(Resource, Debug, Default)]
 pub struct PipelineErrors {
     policy: ErrorPolicy,
@@ -114,6 +113,18 @@ impl PipelineErrors {
             frame,
             error,
         });
+    }
+
+    /// Quantos frames distintos o `SkipFrame` removeu neste tick.
+    #[cfg(feature = "metrics")]
+    pub(crate) fn discarded_frames(&self) -> u64 {
+        if self.policy != ErrorPolicy::SkipFrame {
+            return 0;
+        }
+        let mut frames: Vec<Entity> = self.current.iter().filter_map(|e| e.frame).collect();
+        frames.sort_unstable();
+        frames.dedup();
+        frames.len() as u64
     }
 
     pub(crate) fn set_policy(&mut self, policy: ErrorPolicy) {
