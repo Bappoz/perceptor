@@ -19,6 +19,7 @@ Orquestração ECS sobre `bevy_ecs`.
 | `fallible(sistema)` | adapta um sistema que retorna `Result<()>` |
 | `PipelineMetrics` | recurso (feature `metrics`): `stage(Stage)`, `tick()`, `frames_processed()`, `frames_dropped()`, `fps()` — ver [Métricas e tracing](../guias/metricas.mdx) |
 | `Timing` | `last`, `max`, `total`, `runs`, `mean()` |
+| `testing::TestPipeline` | harness de teste: `with_systems`, `with_plugin`, `spawn`, `tick`, `assert_has*`, `assert_lacks*` — ver [Testando sistemas e plugins](../guias/testes.md#testando-sistemas-e-plugins) |
 | `Plugin` | trait de extensão: `name`, `dependencies`, `build`, `finish`, `cleanup` |
 | `Frame` | componente com `meta: FrameMeta` e `data: FrameData`; `as_image::<P>()`, `as_image_mut::<P>()`, `format()`, `width()`, `height()`, `channels()` |
 | `FrameData` | enum com uma `Image<P>` por formato de pixel; `From<Image<P>>`, `as_image`, `into_image`, `as_bytes` |

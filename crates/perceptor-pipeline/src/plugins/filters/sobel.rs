@@ -74,3 +74,55 @@ pub fn sobel_system(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::schedule::Stage;
+    use crate::testing::TestPipeline;
+    use perceptor_core::Rgb8;
+
+    /// Degrau vertical: colunas 0–1 pretas, 2–3 com valor 10.
+    fn step() -> Image<L8> {
+        Image::from_fn(4, 3, |x, _| L8::new(if x >= 2 { 10 } else { 0 })).unwrap()
+    }
+
+    #[test]
+    fn computes_the_edge_map_of_a_tagged_gray_frame() {
+        let mut test = TestPipeline::with_systems(Stage::Process, sobel_system);
+        let frame = test.spawn(step());
+        test.world_mut().entity_mut(frame).insert(GrayscaleTag);
+
+        test.tick().unwrap();
+
+        test.assert_has_all::<(SobelTag, SobelMap)>(frame);
+        let magnitude = &test.component::<SobelMap>(frame).unwrap().magnitude;
+        assert_eq!(magnitude.dimensions(), (4, 3));
+        // Gx = (10 + 2·10 + 10) − 0 no pixel central da borda; Gy = 0.
+        assert_eq!(magnitude.get(1, 1), Some(&L8::new(40)));
+        // O frame original não é alterado.
+        assert_eq!(test.image::<L8>(frame).as_pixels(), step().as_pixels());
+    }
+
+    #[test]
+    fn requires_the_grayscale_tag() {
+        let mut test = TestPipeline::with_systems(Stage::Process, sobel_system);
+        let untagged = test.spawn(step());
+
+        test.tick().unwrap();
+
+        test.assert_lacks_all::<(SobelTag, SobelMap)>(untagged);
+    }
+
+    #[test]
+    fn ignores_tagged_frames_in_another_format() {
+        let mut test = TestPipeline::with_systems(Stage::Process, sobel_system);
+        let frame = test.spawn(Image::<Rgb8>::new(2, 2).unwrap());
+        test.world_mut().entity_mut(frame).insert(GrayscaleTag);
+
+        test.tick().unwrap();
+
+        test.assert_lacks_all::<(SobelTag, SobelMap)>(frame);
+        assert!(test.errors().is_empty());
+    }
+}

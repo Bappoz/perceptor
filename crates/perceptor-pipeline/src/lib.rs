@@ -23,6 +23,7 @@ pub mod plugin;
 pub mod plugins;
 pub mod prelude;
 pub mod schedule;
+pub mod testing;
 
 pub use errors::{fallible, ErrorPolicy, PipelineErrors, SystemError};
 pub use frame::{Frame, FrameData, FrameMeta, FramePixel};
