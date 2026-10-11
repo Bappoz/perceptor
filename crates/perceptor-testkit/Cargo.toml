@@ -1,0 +1,22 @@
+[package]
+name = "perceptor-testkit"
+description = "Test helpers for perceptor kernels: synthetic images, comparators and golden files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+# Uso interno: serve aos testes das outras crates do workspace.
+publish = false
+
+[dependencies]
+perceptor-core = { workspace = true, features = ["image"] }
+bytemuck.workspace = true
+image.workspace = true
+proptest.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

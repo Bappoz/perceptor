@@ -14,6 +14,8 @@ rust-version = "1.95"
 perceptor-core = { path = "crates/perceptor-core", version = "0.1.0" }
 perceptor-imgproc = { path = "crates/perceptor-imgproc", version = "0.1.0" }
 perceptor-pipeline = { path = "crates/perceptor-pipeline", version = "0.1.0" }
+# Só para testes; `publish = false`, por isso sem `version`
+perceptor-testkit = { path = "crates/perceptor-testkit" }
 
 # ECS engine — orquestração do pipeline
 bevy_ecs = "0.20"

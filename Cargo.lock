@@ -834,6 +834,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "perceptor-testkit"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "perceptor-core",
+ "proptest",
+ "tempfile",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
