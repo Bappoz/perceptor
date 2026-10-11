@@ -2,7 +2,8 @@
 //!
 //! O `Pipeline` encapsula o `bevy_ecs::World` e os `Schedule`s de cada
 //! fase. A cada chamada de `tick()` ele executa os stages em ordem,
-//! processando todos os frames que estiverem no world naquele momento.
+//! processando todos os frames que estiverem no world naquele momento, e
+//! termina com o `CleanupStage`, que remove o que já foi consumido.
 
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
@@ -10,6 +11,7 @@ use bevy_ecs::system::ScheduleSystem;
 use perceptor_core::Result;
 use tracing::{debug, info};
 
+use crate::frame::Frame;
 use crate::plugin::Plugin;
 
 /// Motor principal do pipeline de CV.
@@ -23,6 +25,7 @@ pub struct Pipeline {
     process_schedule: Schedule,
     post_process_schedule: Schedule,
     output_schedule: Schedule,
+    cleanup_schedule: Schedule,
     max_ticks: Option<u64>,
 }
 
@@ -53,6 +56,9 @@ impl Pipeline {
 
         debug!("pipeline tick: OutputStage");
         self.output_schedule.run(&mut self.world);
+
+        debug!("pipeline tick: CleanupStage");
+        self.cleanup_schedule.run(&mut self.world);
 
         let mut state = self.world.resource_mut::<PipelineState>();
         state.tick_count += 1;
@@ -108,6 +114,7 @@ pub struct PipelineBuilder {
     process_schedule: Schedule,
     post_process_schedule: Schedule,
     output_schedule: Schedule,
+    cleanup_schedule: Schedule,
     max_ticks: Option<u64>,
 }
 
@@ -178,6 +185,17 @@ impl PipelineBuilder {
         self
     }
 
+    /// Registra um sistema no `CleanupStage`, que roda depois de todos os
+    /// sistemas de saída. É onde entidades já consumidas são removidas; ver
+    /// [`despawn_processed_frames_system`].
+    pub fn add_cleanup_system<M>(
+        &mut self,
+        system: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
+        self.cleanup_schedule.add_systems(system);
+        self
+    }
+
     /// Constrói o [`Pipeline`] a partir da configuração atual.
     pub fn build(mut self) -> Pipeline {
         // Inicializa recurso de estado do pipeline
@@ -196,6 +214,7 @@ impl PipelineBuilder {
             process_schedule: self.process_schedule,
             post_process_schedule: self.post_process_schedule,
             output_schedule: self.output_schedule,
+            cleanup_schedule: self.cleanup_schedule,
             max_ticks: self.max_ticks,
         }
     }
@@ -203,6 +222,21 @@ impl PipelineBuilder {
     /// Acesso mutável ao `World` durante a construção (para plugins inserirem recursos).
     pub fn world_mut(&mut self) -> &mut World {
         &mut self.world
+    }
+}
+
+// ── Ciclo de vida dos frames ───────────────────────────────────────────────────
+
+/// Sistema ECS: remove toda entidade com [`Frame`], com os demais componentes dela.
+///
+/// Registre no `CleanupStage` ([`PipelineBuilder::add_cleanup_system`]) para que
+/// um pipeline contínuo não acumule um frame por tick. O
+/// [`IoPlugin`](crate::plugins::io::IoPlugin) já o registra, a menos que
+/// `keep_frames` esteja ligado.
+pub fn despawn_processed_frames_system(frames: Query<Entity, With<Frame>>, mut commands: Commands) {
+    for entity in &frames {
+        // `try_`: o sistema pode estar registrado mais de uma vez no mesmo stage.
+        commands.entity(entity).try_despawn();
     }
 }
 
@@ -222,6 +256,7 @@ pub struct PipelineState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frame::FrameMeta;
 
     #[test]
     fn tick_count_increments_each_tick() {
@@ -240,5 +275,73 @@ mod tests {
         let state = pipeline.world().resource::<PipelineState>();
         assert_eq!(state.tick_count, 3);
         assert!(state.should_stop);
+    }
+
+    #[derive(Resource, Default)]
+    struct Seen(Vec<&'static str>);
+
+    fn test_frame() -> Frame {
+        let meta = FrameMeta {
+            index: 0,
+            timestamp_us: 0,
+            source: "test".into(),
+        };
+        Frame::new(meta, ndarray::Array3::zeros((2, 2, 1)))
+    }
+
+    #[test]
+    fn cleanup_stage_runs_after_output_stage() {
+        let mut builder = Pipeline::builder();
+        builder.world_mut().init_resource::<Seen>();
+        builder.add_cleanup_system(|mut seen: ResMut<Seen>| seen.0.push("cleanup"));
+        builder.add_output_system(|mut seen: ResMut<Seen>| seen.0.push("output"));
+        builder.add_input_system(|mut seen: ResMut<Seen>| seen.0.push("input"));
+        let mut pipeline = builder.build();
+
+        pipeline.tick().unwrap();
+        assert_eq!(
+            pipeline.world().resource::<Seen>().0,
+            ["input", "output", "cleanup"]
+        );
+    }
+
+    #[test]
+    fn despawn_system_removes_frames_only_after_output_saw_them() {
+        #[derive(Component)]
+        struct Unrelated;
+
+        let mut builder = Pipeline::builder();
+        builder.world_mut().init_resource::<Seen>();
+        builder.add_output_system(|frames: Query<&Frame>, mut seen: ResMut<Seen>| {
+            if !frames.is_empty() {
+                seen.0.push("output saw frame");
+            }
+        });
+        // Registrado duas vezes: dois plugins podem pedir a mesma limpeza.
+        builder.add_cleanup_system(despawn_processed_frames_system);
+        builder.add_cleanup_system(despawn_processed_frames_system);
+        let mut pipeline = builder.build();
+        pipeline.world_mut().spawn(test_frame());
+        let other = pipeline.world_mut().spawn(Unrelated).id();
+
+        pipeline.tick().unwrap();
+
+        let world = pipeline.world_mut();
+        assert_eq!(world.resource::<Seen>().0, ["output saw frame"]);
+        assert_eq!(world.query::<&Frame>().iter(world).count(), 0);
+        assert!(
+            world.get_entity(other).is_ok(),
+            "só entidades com Frame saem"
+        );
+    }
+
+    #[test]
+    fn frames_persist_without_a_cleanup_system() {
+        let mut pipeline = Pipeline::builder().build();
+        pipeline.world_mut().spawn(test_frame());
+        pipeline.tick().unwrap();
+        pipeline.tick().unwrap();
+        let world = pipeline.world_mut();
+        assert_eq!(world.query::<&Frame>().iter(world).count(), 1);
     }
 }

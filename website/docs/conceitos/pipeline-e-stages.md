@@ -6,11 +6,11 @@ title: Pipeline e stages
 
 ## Ciclo de um tick
 
-`Pipeline::tick()` executa cinco stages, sempre nesta ordem:
+`Pipeline::tick()` executa seis stages, sempre nesta ordem:
 
 ```mermaid
 flowchart LR
-    I[InputStage] --> P[PreProcessStage] --> C[ProcessStage] --> O[PostProcessStage] --> S[OutputStage]
+    I[InputStage] --> P[PreProcessStage] --> C[ProcessStage] --> O[PostProcessStage] --> S[OutputStage] --> L[CleanupStage]
 ```
 
 | Stage | Uso |
@@ -20,8 +20,23 @@ flowchart LR
 | `ProcessStage` | filtros e detecção |
 | `PostProcessStage` | agregação de resultados (NMS, tracking) |
 | `OutputStage` | escrita em disco, exibição |
+| `CleanupStage` | remoção das entidades que a saída já consumiu |
 
 `Pipeline::run()` repete ticks até `PipelineState::should_stop` ser `true`.
+
+## Ciclo de vida dos frames
+
+Uma fonte cria um `Frame` por tick. Sem limpeza eles se acumulam no `World` e todo sistema passa a revisitá-los. `despawn_processed_frames_system`, registrado no `CleanupStage`, remove toda entidade com `Frame` depois que os sistemas de saída rodaram.
+
+O `IoPlugin` já o registra. Para inspecionar os frames depois do tick (testes, depuração), use `keep_frames: true`. Um pipeline sem `IoPlugin` não remove nada por conta própria:
+
+```rust
+builder.add_cleanup_system(despawn_processed_frames_system);
+```
+
+:::caution
+Com a limpeza ligada, o frame vive um único tick. Um sistema que depende de um componente inserido por outro sistema do **mesmo** stage (ver abaixo) nunca chega a vê-lo.
+:::
 
 ## Controle de parada
 

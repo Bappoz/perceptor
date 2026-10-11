@@ -7,7 +7,7 @@ pub use crate::{
     frame::Frame,
     pipeline::{Pipeline, PipelineBuilder},
     plugin::Plugin,
-    schedule::{InputStage, OutputStage, ProcessStage},
+    schedule::{CleanupStage, InputStage, OutputStage, ProcessStage},
 };
 
 // Plugins prontos para uso

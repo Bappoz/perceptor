@@ -28,7 +28,7 @@ Ambas ficam em `plugins::io` e podem ser usadas sem montar um pipeline.
 
 ## Stages
 
-`InputStage`, `PreProcessStage`, `ProcessStage`, `PostProcessStage`, `OutputStage` — ver [Pipeline e stages](../conceitos/pipeline-e-stages.md).
+`InputStage`, `PreProcessStage`, `ProcessStage`, `PostProcessStage`, `OutputStage`, `CleanupStage` — ver [Pipeline e stages](../conceitos/pipeline-e-stages.md).
 
 ## Componentes produzidos pelos filtros
 

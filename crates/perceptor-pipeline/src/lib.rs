@@ -22,5 +22,5 @@ pub mod prelude;
 pub mod schedule;
 
 pub use frame::{Frame, FrameMeta};
-pub use pipeline::{Pipeline, PipelineBuilder, PipelineState};
+pub use pipeline::{despawn_processed_frames_system, Pipeline, PipelineBuilder, PipelineState};
 pub use plugin::Plugin;

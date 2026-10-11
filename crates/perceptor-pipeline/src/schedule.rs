@@ -3,7 +3,7 @@
 //! A ordem canônica de execução é:
 //!
 //! ```text
-//! InputStage → PreProcessStage → ProcessStage → PostProcessStage → OutputStage
+//! InputStage → PreProcessStage → ProcessStage → PostProcessStage → OutputStage → CleanupStage
 //! ```
 //!
 //! Sistemas são registrados em um desses labels. O [`Pipeline`](crate::Pipeline) executa
@@ -29,9 +29,13 @@ pub struct ProcessStage;
 pub struct PostProcessStage;
 
 /// Fase 5 — Saída (exibição, escrita em disco, envio via rede).
-/// Sistemas aqui consomem/destroem Entidades `Frame` processadas.
+/// Sistemas aqui consomem Entidades `Frame` processadas.
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OutputStage;
+
+/// Fase 6 — Limpeza: remoção das entidades que a saída já consumiu.
+#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CleanupStage;
 
 /// Ordem canônica dos stages para uso interno do `Pipeline`.
 pub const STAGE_ORDER: &[&str] = &[
@@ -40,4 +44,5 @@ pub const STAGE_ORDER: &[&str] = &[
     "ProcessStage",
     "PostProcessStage",
     "OutputStage",
+    "CleanupStage",
 ];

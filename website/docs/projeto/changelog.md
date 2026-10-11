@@ -6,6 +6,10 @@ title: Changelog
 
 Mudanças por milestone, da mais recente para a mais antiga.
 
+## M2 — Pipeline v2 (em andamento)
+
+- `CleanupStage` e `despawn_processed_frames_system`: o `IoPlugin` remove cada frame depois da saída; `keep_frames: true` mantém o comportamento anterior ([#12](https://github.com/Bappoz/perceptor/issues/12)).
+
 ## M1 — Core de imagem
 
 - Fuzzing de `perceptor-core` com `cargo-fuzz`: construtores, geometria de visões/ROI/bordas e interop com `ndarray` e `image`, com oráculos independentes e smoke test no CI ([#38](https://github.com/Bappoz/perceptor/issues/38)).

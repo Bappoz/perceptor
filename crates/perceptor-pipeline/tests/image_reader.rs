@@ -16,6 +16,7 @@ fn image_reader_spawns_frame_from_fixture() {
             input_path: FIXTURE.into(),
             output_path: out.path().join("output.png"),
             format: ImageFormat::Png,
+            keep_frames: true,
         })
         .build();
 

@@ -25,13 +25,14 @@ pub trait Plugin: Send + Sync + 'static {
 
 ### `IoPlugin`
 
-Lê uma imagem do disco no `InputStage` e escreve os frames no `OutputStage`.
+Lê uma imagem do disco no `InputStage`, escreve os frames no `OutputStage` e os remove no `CleanupStage`.
 
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `input_path` | `PathBuf` | arquivo de entrada |
 | `output_path` | `PathBuf` | arquivo de saída |
 | `format` | `ImageFormat` | `Png` (padrão) ou `Jpeg` |
+| `keep_frames` | `bool` | mantém os frames no `World` após a saída (padrão `false`) |
 
 O leitor abre `input_path` a cada tick; o escritor salva e sinaliza parada. Leitura de sequências e outras fontes estão no milestone M7.
 

@@ -30,6 +30,8 @@ fn reads_image_and_spawns_frame_entity() {
         .add_plugin(IoPlugin {
             input_path: input,
             output_path: output,
+            // Sem isto o frame é despawnado no `CleanupStage` do mesmo tick.
+            keep_frames: true,
             ..Default::default()
         })
         .build();
@@ -67,4 +69,54 @@ fn sets_should_stop_on_invalid_path() {
     );
     let mut q = world.query::<&Frame>();
     assert_eq!(q.iter(world).count(), 0, "nenhum frame deve ser spawned");
+}
+
+/// Em uso contínuo os frames não se acumulam: cada um é despawnado depois da saída.
+#[test]
+fn frames_are_despawned_after_output() {
+    let tmp = tempfile::tempdir().unwrap();
+    let input = tmp.path().join("input.png");
+    let output = tmp.path().join("output_despawn.png");
+    create_test_png(&input, 4, 6);
+
+    let mut pipeline = Pipeline::builder()
+        .add_plugin(IoPlugin {
+            input_path: input,
+            output_path: output.clone(),
+            ..Default::default()
+        })
+        .build();
+
+    for _ in 0..3 {
+        pipeline.tick().unwrap();
+        let world = pipeline.world_mut();
+        let mut q = world.query::<&Frame>();
+        assert_eq!(q.iter(world).count(), 0, "frame deve sair no fim do tick");
+    }
+    assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 3);
+    assert!(output.exists(), "a saída é escrita antes do despawn");
+}
+
+/// `keep_frames` preserva o comportamento antigo: um frame novo por tick.
+#[test]
+fn keep_frames_accumulates_one_frame_per_tick() {
+    let tmp = tempfile::tempdir().unwrap();
+    let input = tmp.path().join("input.png");
+    create_test_png(&input, 4, 6);
+
+    let mut pipeline = Pipeline::builder()
+        .add_plugin(IoPlugin {
+            input_path: input,
+            output_path: tmp.path().join("output_keep.png"),
+            keep_frames: true,
+            ..Default::default()
+        })
+        .build();
+
+    for _ in 0..3 {
+        pipeline.tick().unwrap();
+    }
+    let world = pipeline.world_mut();
+    let mut q = world.query::<&Frame>();
+    assert_eq!(q.iter(world).count(), 3);
 }
