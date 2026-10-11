@@ -13,6 +13,7 @@ mod image;
 mod interop;
 mod iter;
 mod pixel;
+mod pool;
 mod view;
 
 pub use border::BorderMode;
@@ -23,4 +24,5 @@ pub use interop::ImagePixel;
 pub use pixel::{
     Bgr8, La8, Pixel, PixelFormat, Rgb8, RgbF32, Rgba8, SampleType, Subpixel, L16, L8, LF32,
 };
+pub use pool::{BufferPool, PoolStats, PooledImage};
 pub use view::{ImageView, ImageViewMut, Rect};

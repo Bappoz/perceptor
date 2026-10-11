@@ -8,6 +8,7 @@ import ImageBasics from '!!raw-loader!@site/../examples/image_basics.rs';
 import ViewsRoi from '!!raw-loader!@site/../examples/views_roi.rs';
 import ParallelRows from '!!raw-loader!@site/../examples/parallel_rows.rs';
 import BorderModes from '!!raw-loader!@site/../examples/border_modes.rs';
+import BufferPoolExample from '!!raw-loader!@site/../examples/buffer_pool.rs';
 import Interop from '!!raw-loader!@site/../examples/interop.rs';
 import PixelCast from '!!raw-loader!@site/../examples/pixel_cast.rs';
 
@@ -214,8 +215,20 @@ Eixos na ordem `[altura, largura, canais]`.
 
 <CodeBlock language="rust" title="examples/interop.rs">{Interop}</CodeBlock>
 
-## Em construção
+## Reutilização de buffers
 
-| Item | Issue |
+Em streaming, um `Image::new` por frame custa uma alocação e um `memset` do tamanho do frame. `BufferPool` guarda os buffers devolvidos e os entrega de novo para pedidos com as mesmas dimensões e o mesmo formato de pixel.
+
+| Item | Descrição |
 |---|---|
-| `BufferPool` | [#36](https://github.com/Bappoz/perceptor/issues/36) |
+| `BufferPool::new(max_idle_bytes)` | pool que retém até esse total de buffers ociosos; `0` nunca retém |
+| `BufferPool::unbounded()` | sem limite — a memória ociosa só cresce se o tamanho do frame variar |
+| `pool.acquire::<P>(w, h)` | empresta uma imagem; o conteúdo é o do frame anterior |
+| `pool.acquire_zeroed::<P>(w, h)` | idem, com todos os pixels em zero |
+| `pool.stats()` | `allocations`, `reuses`, `discarded` e `idle_bytes` |
+| `pool.clear()` | libera os buffers ociosos |
+| `pooled.into_inner()` | desliga a imagem do pool; o buffer não volta |
+
+`PooledImage<P>` faz `Deref` para `Image<P>` e devolve o buffer no `Drop`. O pool é um handle `Arc`: clone-o para outras threads. O limite vale para o que está **ocioso**; o que está emprestado pertence a quem o segura, e um buffer devolvido além do limite é liberado.
+
+<CodeBlock language="rust" title="examples/buffer_pool.rs">{BufferPoolExample}</CodeBlock>
