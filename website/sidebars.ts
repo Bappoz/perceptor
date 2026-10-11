@@ -23,7 +23,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Guias',
-      items: ['guias/escrevendo-um-plugin', 'guias/testes', 'guias/fuzzing'],
+      items: ['guias/escrevendo-um-plugin', 'guias/metricas', 'guias/testes', 'guias/fuzzing'],
     },
     {
       type: 'category',

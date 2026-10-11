@@ -16,6 +16,8 @@
 
 pub mod errors;
 pub mod frame;
+#[cfg(feature = "metrics")]
+pub mod metrics;
 pub mod pipeline;
 pub mod plugin;
 pub mod plugins;
@@ -24,6 +26,8 @@ pub mod schedule;
 
 pub use errors::{fallible, ErrorPolicy, PipelineErrors, SystemError};
 pub use frame::{Frame, FrameData, FrameMeta, FramePixel};
+#[cfg(feature = "metrics")]
+pub use metrics::{PipelineMetrics, Timing};
 pub use pipeline::{despawn_processed_frames_system, Pipeline, PipelineBuilder, PipelineState};
 pub use plugin::Plugin;
 pub use schedule::Stage;

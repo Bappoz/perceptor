@@ -18,12 +18,14 @@ fmt-check:
 lint:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
     cargo clippy -p perceptor-core --all-targets --no-default-features -- -D warnings
+    cargo clippy -p perceptor-pipeline --all-targets --no-default-features -- -D warnings
 
 # Testes unitários, de integração e doctests
 test *args:
     cargo test --workspace {{ args }}
     cargo test -q -p perceptor-core --no-default-features {{ args }}
     cargo test -q -p perceptor-core --all-features {{ args }}
+    cargo test -q -p perceptor-pipeline --no-default-features {{ args }}
 
 # Rustdoc com links quebrados e docs faltantes tratados como erro
 doc:

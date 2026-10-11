@@ -69,7 +69,7 @@ builder.add_system(Stage::Process, (grayscale_system, sobel_system).chain());
 
 É o que `FiltersPlugin::all()` faz: grayscale e Sobel rodam no mesmo tick.
 
-Sistemas sem ordem entre si podem rodar em paralelo quando não disputam os mesmos dados. Ordene só o que depende de fato.
+Os sistemas rodam um de cada vez, na thread que chamou `tick()`: o pipeline fixa o executor single-thread do `bevy_ecs`, e o paralelismo fica dentro dos kernels (rayon). Entre sistemas sem ordem a sequência é indefinida — ordene o que depende de fato.
 
 ## Tratamento de erros
 
@@ -94,7 +94,6 @@ Detalhes que valem conhecer:
 
 - Em `FailFast` a interrupção é **por stage**: os outros sistemas do stage em que o erro ocorreu ainda rodam, e `Stage::Cleanup` não roda — os frames ficam no `World` para inspeção.
 - Em `SkipFrame`, um erro sem frame associado (`fallible`, `report`) só fica registrado.
-- Sistemas que recebem `ResMut<PipelineErrors>` não rodam em paralelo entre si.
 - Um `World` montado à mão para rodar `grayscale_system`, `sobel_system` ou `image_writer_system` precisa do recurso: `world.init_resource::<PipelineErrors>()`.
 
 Exemplo completo em [Sistemas que podem falhar](../guias/escrevendo-um-plugin.mdx#sistemas-que-podem-falhar).

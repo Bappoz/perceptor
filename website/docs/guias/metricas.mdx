@@ -1,0 +1,91 @@
+---
+title: Métricas e tracing
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/metrics.rs';
+
+# Métricas e tracing
+
+O pipeline mede onde o tempo de cada tick é gasto e expõe o resultado de duas formas: o recurso `PipelineMetrics`, para ler em código, e spans `tracing`, para ferramentas de perfil.
+
+## Lendo `PipelineMetrics`
+
+<CodeBlock language="rust" title="examples/metrics.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --release --example metrics
+```
+
+Saída de uma execução (os valores dependem da máquina; servem para mostrar o formato):
+
+```text
+stage             média        máx     último
+Input           162.3µs    404.0µs    100.6µs
+PreProcess      855.0ns      2.1µs    557.0ns
+Process           3.3ms     10.0ms      1.3ms
+PostProcess       1.7µs      3.3µs      1.2µs
+Output          806.0ns      2.3µs    501.0ns
+Cleanup           8.0µs     12.3µs      4.4µs
+tick              3.6ms     11.6ms      1.4ms
+30 frames, 0 descartados, 280.2 fps
+```
+
+Como interpretar:
+
+- **Um stage domina.** Aqui `Process` responde por quase todo o tick; é onde vale otimizar. Stages sem sistemas custam centenas de nanossegundos — o preço do marcador.
+- **`máx` muito acima da `média`** indica um tick atípico. Nesta execução é o primeiro: o schedule é montado e o pool do rayon é criado no primeiro uso.
+- **`tick` maior que a soma dos stages**: a diferença é o custo do próprio schedule.
+
+| Leitura | Significado |
+|---|---|
+| `metrics.stage(Stage::X)` | `Timing` do stage: sistemas, aplicação dos `Commands` deles e, em `SkipFrame`, o descarte dos frames com erro |
+| `metrics.tick()` | `Timing` do tick inteiro |
+| `Timing { last, max, total, runs }` + `mean()` | última duração, maior, soma, número de medições e média |
+| `metrics.frames_processed()` | frames presentes no início de `Stage::Output`, somados por tick |
+| `metrics.frames_dropped()` | frames removidos por [`ErrorPolicy::SkipFrame`](../conceitos/pipeline-e-stages.md#tratamento-de-erros) |
+| `metrics.fps()` | `frames_processed` por segundo de relógio, do início do primeiro tick ao fim do último; `None` antes do primeiro tick |
+
+Dois detalhes de contagem:
+
+- `fps()` usa tempo de relógio, então inclui o tempo ocioso entre ticks. Para a taxa que o processamento sustentaria sem espera, use `1 / metrics.tick().mean()`.
+- Um frame que permanece no `World` por vários ticks (sem sistema de limpeza) é contado em `frames_processed` a cada tick.
+
+Dentro de um sistema, as métricas são um recurso como qualquer outro: `Res<PipelineMetrics>`.
+
+## Spans
+
+Cada tick abre um span `tick` (campo `tick`) e, dentro dele, um span `stage` (campo `stage`) por stage, no nível `DEBUG`. Spans criados pelos seus sistemas ficam aninhados no span do stage correspondente:
+
+```text
+tick{tick=1}
+├─ stage{stage=Input}
+├─ stage{stage=PreProcess}
+├─ stage{stage=Process}
+│  └─ meu_kernel          ← span criado dentro de um sistema
+├─ stage{stage=PostProcess}
+├─ stage{stage=Output}
+└─ stage{stage=Cleanup}
+```
+
+O Perceptor só emite os spans; quem os consome é o subscriber `tracing` que a aplicação instalar (`tracing-subscriber`, `tracing-chrome`, `tracing-tracy`…).
+
+Para um span por **sistema**, ligue a feature `trace-systems`, que ativa a instrumentação do próprio `bevy_ecs`.
+
+## Features
+
+| Feature | Padrão | Efeito |
+|---|---|---|
+| `metrics` | ligada | `PipelineMetrics`, `Pipeline::metrics()` e os spans de stage |
+| `trace-systems` | desligada | um span por sistema, emitido pelo `bevy_ecs` |
+
+```toml
+# Sem medição: nenhum marcador é registrado e o módulo não é compilado.
+perceptor = { version = "0.1", default-features = false }
+```
+
+Com `metrics` ligada, o custo por tick são sete sistemas marcadores (um por fronteira entre stages), cada um com uma leitura de relógio e a abertura/fechamento de um span. O span `tick` existe mesmo sem a feature.
+
+## Por que os spans de stage funcionam
+
+Um span `tracing` precisa ser aberto e fechado na mesma thread. O pipeline fixa o executor single-thread do `bevy_ecs`: os sistemas rodam um de cada vez, na thread que chamou `tick()`. O paralelismo do Perceptor fica dentro dos kernels, por linha ou por faixa, via rayon.

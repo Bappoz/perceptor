@@ -13,7 +13,8 @@ rust-version = "1.95"
 [workspace.dependencies]
 perceptor-core = { path = "crates/perceptor-core", version = "0.1.0" }
 perceptor-imgproc = { path = "crates/perceptor-imgproc", version = "0.1.0" }
-perceptor-pipeline = { path = "crates/perceptor-pipeline", version = "0.1.0" }
+# Features repassadas pela fachada, por isso sem as padrão aqui
+perceptor-pipeline = { path = "crates/perceptor-pipeline", version = "0.1.0", default-features = false }
 # Só para testes; `publish = false`, por isso sem `version`
 perceptor-testkit = { path = "crates/perceptor-testkit" }
 
@@ -69,8 +70,16 @@ rayon.workspace = true
 tempfile.workspace = true
 
 [features]
-default = []
+default = ["metrics"]
+# `PipelineMetrics` e spans de tracing por stage
+metrics = ["perceptor-pipeline/metrics"]
+# Um span de tracing por sistema (feature `trace` do `bevy_ecs`)
+trace-systems = ["perceptor-pipeline/trace-systems"]
 ml  = []                # Marcador para habilitar plugins ML (tch-rs / ort)
+
+[[example]]
+name = "metrics"
+required-features = ["metrics"]
 
 [lints]
 workspace = true

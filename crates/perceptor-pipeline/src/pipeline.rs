@@ -5,7 +5,7 @@
 //! os stages em ordem, com os `Commands` de um aplicados antes do seguinte.
 
 use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::Schedule;
+use bevy_ecs::schedule::{Schedule, SingleThreadedExecutor};
 use bevy_ecs::system::ScheduleSystem;
 use perceptor_core::{Error, Result};
 use tracing::{debug, info, warn};
@@ -14,6 +14,8 @@ use crate::errors::{
     discard_failed_frames, has_frames_to_discard, not_halted, ErrorPolicy, PipelineErrors,
 };
 use crate::frame::Frame;
+#[cfg(feature = "metrics")]
+use crate::metrics::{add_boundary_markers, Boundary, PipelineMetrics};
 use crate::plugin::Plugin;
 use crate::schedule::Stage;
 
@@ -52,12 +54,24 @@ impl Pipeline {
     /// Em [`ErrorPolicy::FailFast`], o primeiro erro reportado por um sistema
     /// neste tick. Nas outras políticas nunca falha.
     pub fn tick(&mut self) -> Result<()> {
-        debug!("pipeline tick");
+        let tick = self.world.resource::<PipelineState>().tick_count + 1;
+        let _span = tracing::debug_span!("tick", tick).entered();
         self.world.resource_mut::<PipelineErrors>().begin_tick();
+        #[cfg(feature = "metrics")]
+        let started = self.world.resource_mut::<PipelineMetrics>().begin_tick();
+
         self.schedule.run(&mut self.world);
 
+        #[cfg(feature = "metrics")]
+        {
+            let dropped = self.world.resource::<PipelineErrors>().discarded_frames();
+            self.world
+                .resource_mut::<PipelineMetrics>()
+                .end_tick(started, dropped);
+        }
+
         let mut state = self.world.resource_mut::<PipelineState>();
-        state.tick_count += 1;
+        state.tick_count = tick;
         if let Some(max) = self.max_ticks {
             if state.tick_count >= max {
                 state.should_stop = true;
@@ -109,6 +123,16 @@ impl Pipeline {
         }
     }
 
+    /// Métricas acumuladas: latência por stage e por tick, fps e descartes.
+    ///
+    /// # Panics
+    /// Se o recurso [`PipelineMetrics`] tiver sido removido do `World`.
+    #[cfg(feature = "metrics")]
+    #[must_use]
+    pub fn metrics(&self) -> &PipelineMetrics {
+        self.world.resource::<PipelineMetrics>()
+    }
+
     /// Erros reportados pelos sistemas no tick mais recente.
     ///
     /// # Panics
@@ -144,6 +168,11 @@ pub struct PipelineBuilder {
 impl Default for PipelineBuilder {
     fn default() -> Self {
         let mut schedule = Schedule::default();
+        // Explícito: sem isto, a feature `multi_threaded` do `bevy_ecs` ligada
+        // por outra crate do grafo trocaria o executor. Os spans de stage
+        // dependem de tudo rodar na thread que chamou `tick()`; o paralelismo
+        // do Perceptor fica dentro dos kernels (rayon).
+        schedule.set_executor(SingleThreadedExecutor::new());
         // Encadear os sets ordena os stages e faz o bevy inserir um ponto de
         // sincronização (flush de `Commands`) entre dois stages consecutivos.
         // A tupla sai de `Stage::ALL` para a ordem ter uma única fonte.
@@ -157,6 +186,9 @@ impl Default for PipelineBuilder {
             let discard = discard_failed_frames
                 .run_if(has_frames_to_discard)
                 .after(stage);
+            // O descarte conta no tempo do stage que falhou.
+            #[cfg(feature = "metrics")]
+            let discard = discard.before(Boundary(i + 1));
             match Stage::ALL.get(i + 1) {
                 Some(&next) => schedule.add_systems(discard.before(next)),
                 None => schedule.add_systems(discard),
@@ -165,6 +197,11 @@ impl Default for PipelineBuilder {
 
         let mut world = World::default();
         world.init_resource::<PipelineErrors>();
+        #[cfg(feature = "metrics")]
+        {
+            add_boundary_markers(&mut schedule);
+            world.init_resource::<PipelineMetrics>();
+        }
         Self {
             world,
             plugins: Vec::new(),
