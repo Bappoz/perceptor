@@ -34,7 +34,7 @@ pub fn read_frame(path: &Path, index: u64) -> Result<Frame> {
 }
 
 /// Sistema ECS: lê um frame da fonte configurada e o spawna como entidade.
-/// Registrado no `InputStage` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
+/// Registrado em `Stage::Input` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
 pub fn image_reader_system(
     mut commands: Commands,
     mut config: ResMut<IoConfig>,

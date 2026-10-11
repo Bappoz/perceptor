@@ -86,6 +86,6 @@ Hoje `Frame` guarda um tensor `ndarray` no formato `[altura, largura, canais]` c
 | Decisão | Motivo |
 |---|---|
 | `bevy_ecs` como motor | ECS maduro com scheduler paralelo, utilizável sem o restante do Bevy |
-| Stages fixos | ordem de dependência previsível entre leitura, processamento e saída |
+| Stages fixos como `SystemSet`s de um único schedule | ordem previsível entre leitura, processamento e saída, com ordenação fina dentro do stage |
 | `unsafe` confinado | restrito a módulos isolados (SIMD, hardware); `perceptor-core` usa `forbid(unsafe_code)` |
 | Referência escalar | toda otimização é validada contra a implementação simples |

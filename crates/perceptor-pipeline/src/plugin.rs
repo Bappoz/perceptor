@@ -1,7 +1,7 @@
 //! Trait `Plugin`: contrato para extensão do pipeline via plugins.
 //!
 //! Inspirado no sistema de plugins do Bevy, cada plugin recebe acesso
-//! ao `PipelineBuilder` para registrar sistemas nos schedules corretos.
+//! ao `PipelineBuilder` para registrar sistemas no [`Stage`](crate::Stage) correto.
 //!
 //! # Exemplo de plugin customizado
 //!
@@ -14,7 +14,7 @@
 //!     fn name(&self) -> &str { "MyPlugin" }
 //!
 //!     fn build(&self, builder: &mut PipelineBuilder) {
-//!         // builder.add_system(ProcessStage, my_system);
+//!         // builder.add_system(Stage::Process, my_system);
 //!     }
 //! }
 //! ```

@@ -23,11 +23,13 @@ cargo run --example custom_plugin
 
 ## Métodos de registro
 
-| Método do builder | Stage |
+`builder.add_system(Stage::X, sistema)` registra em qualquer stage; os métodos abaixo são atalhos. Para ordenar sistemas do mesmo stage, passe `(a, b).chain()` — ver [Visibilidade de componentes](../conceitos/pipeline-e-stages.md#visibilidade-de-componentes).
+
+| Atalho | Stage |
 |---|---|
-| `add_input_system` | `InputStage` |
-| `add_pre_process_system` | `PreProcessStage` |
-| `add_process_system` | `ProcessStage` |
-| `add_post_process_system` | `PostProcessStage` |
-| `add_output_system` | `OutputStage` |
-| `add_cleanup_system` | `CleanupStage` |
+| `add_input_system` | `Stage::Input` |
+| `add_pre_process_system` | `Stage::PreProcess` |
+| `add_process_system` | `Stage::Process` |
+| `add_post_process_system` | `Stage::PostProcess` |
+| `add_output_system` | `Stage::Output` |
+| `add_cleanup_system` | `Stage::Cleanup` |

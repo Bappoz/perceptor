@@ -36,7 +36,7 @@ impl Plugin for InvertPlugin {
     }
 
     fn build(&self, builder: &mut PipelineBuilder) {
-        builder.add_process_system(invert_system);
+        builder.add_system(Stage::Process, invert_system);
     }
 }
 

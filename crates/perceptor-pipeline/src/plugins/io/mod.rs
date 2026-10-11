@@ -1,9 +1,9 @@
 //! Plugin de I/O: leitura de imagens/vídeos e escrita de resultados.
 //!
 //! # Sistemas registrados
-//! - [`image_reader`] → `InputStage`
-//! - [`image_writer`] → `OutputStage`
-//! - [`despawn_processed_frames_system`] → `CleanupStage` (a menos que `keep_frames`)
+//! - [`image_reader`] → `Stage::Input`
+//! - [`image_writer`] → `Stage::Output`
+//! - [`despawn_processed_frames_system`] → `Stage::Cleanup` (a menos que `keep_frames`)
 
 pub mod config;
 pub mod image_reader;
@@ -44,7 +44,7 @@ pub struct IoPlugin {
     pub format: ImageFormat,
     /// Mantém os frames no `World` depois da saída, para inspeção.
     ///
-    /// Por padrão cada frame é removido no `CleanupStage` do tick em que foi
+    /// Por padrão cada frame é removido em `Stage::Cleanup` do tick em que foi
     /// escrito; com `true` eles se acumulam, um por tick.
     pub keep_frames: bool,
 }

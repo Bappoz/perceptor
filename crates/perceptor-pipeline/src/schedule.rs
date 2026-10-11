@@ -1,48 +1,44 @@
-//! Labels de schedule que definem as fases de execução do pipeline.
+//! Stages: as fases de um tick do pipeline.
 //!
-//! A ordem canônica de execução é:
+//! Todos os sistemas vivem em um único `Schedule`; cada [`Stage`] é um
+//! `SystemSet`, e os sets são encadeados na ordem canônica:
 //!
 //! ```text
-//! InputStage → PreProcessStage → ProcessStage → PostProcessStage → OutputStage → CleanupStage
+//! Input → PreProcess → Process → PostProcess → Output → Cleanup
 //! ```
 //!
-//! Sistemas são registrados em um desses labels. O [`Pipeline`](crate::Pipeline) executa
-//! os schedules nessa ordem a cada tick.
+//! Entre dois stages há um ponto de sincronização: os `Commands` emitidos em
+//! um stage já estão aplicados quando o seguinte começa. Dentro de um stage a
+//! ordem é livre (e pode ser paralela), a menos que os sistemas sejam
+//! ordenados com `.chain()`, `.before()` ou `.after()`.
 
-use bevy_ecs::schedule::ScheduleLabel;
+use bevy_ecs::schedule::SystemSet;
 
-/// Fase 1 — Leitura de fontes (câmera, arquivo, rede).
-/// Sistemas aqui produzem Entidades `Frame` no `World`.
-#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InputStage;
+/// Fase de execução de um tick.
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Stage {
+    /// Leitura de fontes (câmera, arquivo, rede): sistemas criam entidades `Frame`.
+    Input,
+    /// Pré-processamento (resize, normalização, crop).
+    PreProcess,
+    /// Processamento principal (filtros, detecção, segmentação).
+    Process,
+    /// Pós-processamento (NMS, tracking, agregação de resultados).
+    PostProcess,
+    /// Saída (exibição, escrita em disco, envio via rede).
+    Output,
+    /// Limpeza: remoção das entidades que a saída já consumiu.
+    Cleanup,
+}
 
-/// Fase 2 — Pré-processamento (resize, normalização, crop).
-#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PreProcessStage;
-
-/// Fase 3 — Processamento principal (filtros, detecção, segmentação).
-#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ProcessStage;
-
-/// Fase 4 — Pós-processamento (NMS, tracking, agregação de resultados).
-#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PostProcessStage;
-
-/// Fase 5 — Saída (exibição, escrita em disco, envio via rede).
-/// Sistemas aqui consomem Entidades `Frame` processadas.
-#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct OutputStage;
-
-/// Fase 6 — Limpeza: remoção das entidades que a saída já consumiu.
-#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CleanupStage;
-
-/// Ordem canônica dos stages para uso interno do `Pipeline`.
-pub const STAGE_ORDER: &[&str] = &[
-    "InputStage",
-    "PreProcessStage",
-    "ProcessStage",
-    "PostProcessStage",
-    "OutputStage",
-    "CleanupStage",
-];
+impl Stage {
+    /// Todos os stages, na ordem em que rodam.
+    pub const ALL: [Self; 6] = [
+        Self::Input,
+        Self::PreProcess,
+        Self::Process,
+        Self::PostProcess,
+        Self::Output,
+        Self::Cleanup,
+    ];
+}

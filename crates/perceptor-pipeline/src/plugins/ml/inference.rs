@@ -2,7 +2,7 @@
 //!
 //! # Fluxo esperado
 //! 1. `MlPlugin` registra `ModelConfig` como recurso com o caminho do modelo.
-//! 2. `inference_system` roda no `PostProcessStage`.
+//! 2. `inference_system` roda em `Stage::PostProcess`.
 //! 3. Para cada frame pré-processado, normaliza o tensor e roda o modelo.
 //! 4. Resultado é anexado como componente [`Prediction`] na entidade.
 //!
@@ -42,7 +42,7 @@ pub struct Prediction {
 
 /// Sistema ECS: roda inferência ML sobre frames disponíveis.
 ///
-/// Registrado no `PostProcessStage` pelo [`MlPlugin`](crate::plugins::ml::MlPlugin).
+/// Registrado em `Stage::PostProcess` pelo [`MlPlugin`](crate::plugins::ml::MlPlugin).
 pub fn inference_system(
     query: Query<(Entity, &Frame)>,
     config: Option<Res<ModelConfig>>,

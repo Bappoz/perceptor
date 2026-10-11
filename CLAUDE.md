@@ -32,7 +32,7 @@ Dependência só em uma direção: pipeline → imgproc → core.
 - Commits: Conventional Commits. Docs e rustdoc em PT-BR; README em inglês.
 
 ## Armadilhas
-- Componentes inseridos via `Commands` só ficam visíveis no stage seguinte: grayscale e Sobel estão no mesmo stage, então o Sobel roda um tick depois (#39).
+- `Commands` só são aplicados no ponto de sincronização seguinte (entre stages, ou entre sistemas ordenados). Sistema que depende de componente inserido por outro do mesmo stage precisa de `(a, b).chain()` — sem isso só vê no tick seguinte, e com `IoPlugin` o frame já foi despawnado.
 - `#[derive(Component)]` fora das crates do workspace exige `bevy_ecs` como dependência direta.
 - pnpm 11 falha com script de instalação não declarado: ver `website/pnpm-workspace.yaml` (`allowBuilds`).
 - Links entre páginas do site usam a extensão real do arquivo (`.md` vs `.mdx`); o build quebra se errar.

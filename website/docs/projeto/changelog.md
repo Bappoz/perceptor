@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M2 — Pipeline v2 (em andamento)
 
+- Schedule único: `Stage` vira um `SystemSet` com seis variantes encadeadas e `add_system(Stage::X, …)`; grayscale e Sobel passam a rodar no mesmo tick. Os tipos `InputStage`…`CleanupStage` e `STAGE_ORDER` foram removidos ([#39](https://github.com/Bappoz/perceptor/issues/39)).
 - `CleanupStage` e `despawn_processed_frames_system`: o `IoPlugin` remove cada frame depois da saída; `keep_frames: true` mantém o comportamento anterior ([#12](https://github.com/Bappoz/perceptor/issues/12)).
 
 ## M1 — Core de imagem

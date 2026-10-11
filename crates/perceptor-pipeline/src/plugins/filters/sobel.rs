@@ -14,8 +14,8 @@
 //! ```
 //!
 //! # Pré-requisito
-//! O frame **deve** ser grayscale (1 canal). Use `grayscale_system` antes
-//! ou adicione filtros com `.before()`/`.after()` no schedule.
+//! O frame **deve** ser grayscale (1 canal) e ter [`GrayscaleTag`]. Como o tag
+//! é inserido via `Commands`, ordene os dois: `(grayscale_system, sobel_system).chain()`.
 //!
 
 use bevy_ecs::prelude::*;
@@ -42,7 +42,7 @@ pub struct SobelMap {
 /// Sistema ECS: computa o mapa de bordas Sobel para frames grayscale.
 ///
 /// Requer [`GrayscaleTag`] — só processa frames já convertidos para cinza.
-/// Registrado no `ProcessStage` pelo [`FiltersPlugin`](crate::plugins::filters::FiltersPlugin).
+/// Registrado em `Stage::Process` pelo [`FiltersPlugin`](crate::plugins::filters::FiltersPlugin).
 pub fn sobel_system(
     query: Query<(Entity, &Frame), (With<GrayscaleTag>, Without<SobelTag>)>,
     mut commands: Commands,
