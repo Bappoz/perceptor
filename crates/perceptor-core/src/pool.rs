@@ -54,7 +54,7 @@ struct Shared {
 ///
 /// let pool = BufferPool::unbounded();
 /// for _ in 0..10 {
-///     let mut frame = pool.acquire::<L8>(640, 480)?;
+///     let mut frame = pool.acquire::<L8>(16, 8)?;
 ///     frame.as_pixels_mut().fill(L8::new(7));
 /// } // cada `frame` volta ao pool aqui
 /// assert_eq!(pool.stats().allocations, 1);
