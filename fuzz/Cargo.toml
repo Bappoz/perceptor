@@ -1,0 +1,36 @@
+[package]
+name = "perceptor-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+perceptor-testkit = { path = "../crates/perceptor-testkit" }
+
+# Fora do workspace principal: precisa de nightly e de `cfg(fuzzing)`.
+[workspace]
+
+[[bin]]
+name = "image_ctor"
+path = "fuzz_targets/image_ctor.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "view_geometry"
+path = "fuzz_targets/view_geometry.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "interop"
+path = "fuzz_targets/interop.rs"
+test = false
+doc = false
+bench = false

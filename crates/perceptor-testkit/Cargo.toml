@@ -10,9 +10,10 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-perceptor-core = { workspace = true, features = ["image"] }
+perceptor-core = { workspace = true, features = ["image", "ndarray"] }
 bytemuck.workspace = true
 image.workspace = true
+ndarray.workspace = true
 proptest.workspace = true
 
 [dev-dependencies]

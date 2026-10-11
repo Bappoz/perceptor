@@ -42,6 +42,10 @@ miri *args:
     # global do rayon nunca é encerrado, daí o `ignore-leaks`.
     MIRIFLAGS="-Zmiri-tree-borrows -Zmiri-ignore-leaks" cargo +nightly miri test -p perceptor-core {{ args }}
 
+# Fuzzing (requer cargo-fuzz e nightly): `just fuzz image_ctor 60`; alvos em fuzz/fuzz_targets/
+fuzz target seconds="60":
+    cd fuzz && cargo +nightly fuzz run {{target}} -- -max_total_time={{seconds}}
+
 # Benchmarks criterion
 bench *args:
     cargo bench --workspace {{ args }}

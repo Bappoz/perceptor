@@ -9,7 +9,7 @@ O desenvolvimento é feito em incrementos pequenos: uma issue, uma branch, um PR
 | Milestone | Tema | Status |
 |---|---|---|
 | [M0](https://github.com/Bappoz/perceptor/milestone/1) | Fundação: workspace, tooling, CI, site | concluído |
-| [M1](https://github.com/Bappoz/perceptor/milestone/2) | Core de imagem: `Image<P>`, views, formatos de pixel | em andamento |
+| [M1](https://github.com/Bappoz/perceptor/milestone/2) | Core de imagem: `Image<P>`, views, formatos de pixel | concluído |
 | [M2](https://github.com/Bappoz/perceptor/milestone/3) | Pipeline v2: schedule único, erros, métricas | planejado |
 | [M3](https://github.com/Bappoz/perceptor/milestone/4) | Cor e operações pontuais | planejado |
 | [M4](https://github.com/Bappoz/perceptor/milestone/5) | Filtros espaciais | planejado |
