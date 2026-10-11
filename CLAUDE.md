@@ -16,6 +16,7 @@ Rodar `just ci` antes de concluir qualquer mudança; `just docs-build` se tocar 
 - `crates/perceptor-core` — tipos fundamentais (`Error`, `Pixel` e formatos, `Image<P>`, views). `forbid(unsafe_code)`.
 - `crates/perceptor-imgproc` — kernels como funções puras. Não conhece ECS nem I/O.
 - `crates/perceptor-pipeline` — `Frame`, stages, plugins e sistemas que chamam os kernels.
+- `crates/perceptor-testkit` — só testes (`publish = false`): padrões sintéticos, estratégias proptest, `assert_images_eq!`, golden PNG. `perceptor-core` não a usa (dependência circular duplicaria os tipos).
 - `src/` — fachada `perceptor` (re-exports + prelude). `examples/` — exemplos embutidos no site.
 - `website/docs/` — documentação; `ROADMAP.md` — plano, uma issue por chunk.
 
