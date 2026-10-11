@@ -22,7 +22,7 @@ cargo run --example grayscale -- entrada.png saida.png
 1. `Pipeline::builder()` cria um builder com um `World` ECS vazio.
 2. `IoPlugin` registra o leitor no `InputStage` e o escritor no `OutputStage`.
 3. `FiltersPlugin` registra `grayscale_system` no `ProcessStage`.
-4. `run()` executa *ticks* até que algum sistema sinalize parada. Em cada tick os cinco stages rodam em ordem.
+4. `run()` executa *ticks* até que algum sistema sinalize parada. Em cada tick os seis stages rodam em ordem.
 
 Neste exemplo um único tick basta: o leitor cria a entidade `Frame`, o filtro substitui os pixels pela luminância e o escritor salva o arquivo e pede a parada.
 

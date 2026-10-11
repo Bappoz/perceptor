@@ -3,6 +3,7 @@
 //! # Sistemas registrados
 //! - [`image_reader`] → `InputStage`
 //! - [`image_writer`] → `OutputStage`
+//! - [`despawn_processed_frames_system`] → `CleanupStage` (a menos que `keep_frames`)
 
 pub mod config;
 pub mod image_reader;
@@ -13,7 +14,7 @@ use std::path::PathBuf;
 use bevy_ecs::prelude::*;
 
 use crate::{
-    pipeline::PipelineBuilder,
+    pipeline::{despawn_processed_frames_system, PipelineBuilder},
     plugin::Plugin,
     plugins::io::{config::ImageFormat, image_writer::image_writer_system},
 };
@@ -41,6 +42,11 @@ pub struct IoPlugin {
     pub output_path: PathBuf,
     /// Formato de saída.
     pub format: ImageFormat,
+    /// Mantém os frames no `World` depois da saída, para inspeção.
+    ///
+    /// Por padrão cada frame é removido no `CleanupStage` do tick em que foi
+    /// escrito; com `true` eles se acumulam, um por tick.
+    pub keep_frames: bool,
 }
 
 impl Plugin for IoPlugin {
@@ -51,6 +57,9 @@ impl Plugin for IoPlugin {
     fn build(&self, builder: &mut PipelineBuilder) {
         builder.add_input_system(image_reader_system);
         builder.add_output_system(image_writer_system);
+        if !self.keep_frames {
+            builder.add_cleanup_system(despawn_processed_frames_system);
+        }
     }
 
     fn finish(&self, builder: &mut PipelineBuilder) {

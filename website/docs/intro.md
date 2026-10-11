@@ -18,7 +18,7 @@ O projeto está na versão `0.1` e em desenvolvimento inicial. Hoje existem:
 
 | Área | O que funciona |
 |---|---|
-| Pipeline | `Pipeline`, `PipelineBuilder`, cinco stages ordenados, trait `Plugin` |
+| Pipeline | `Pipeline`, `PipelineBuilder`, seis stages ordenados, trait `Plugin` |
 | I/O | leitura de uma imagem do disco e escrita em PNG/JPEG (`IoPlugin`) |
 | Filtros | escala de cinza BT.601 e Sobel 3×3 (`FiltersPlugin`) |
 | Erros | `perceptor_core::Error` tipado em kernels e I/O |

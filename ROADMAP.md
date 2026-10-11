@@ -61,7 +61,7 @@ Image<P>, views, formatos de pixel, bordas, pool e infra de testes.
 
 Schedule único, erros, plugins, Frame multi-formato, métricas.
 
-- [ ] #12 feat: DespawnSystem — remover entidades Frame processadas após output
+- [x] #12 feat: DespawnSystem — remover entidades Frame processadas após output
 - [ ] #39 refactor(pipeline): schedule único com SystemSets ordenados
 - [ ] #40 feat(pipeline): propagação de erros de sistemas com política configurável
 - [ ] #41 feat(pipeline): deduplicação, dependências e cleanup de plugins

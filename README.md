@@ -52,7 +52,7 @@ cargo run --example custom_plugin
 
 | Area | Available |
 |---|---|
-| Pipeline | `Pipeline`, `PipelineBuilder`, five ordered stages, `Plugin` trait |
+| Pipeline | `Pipeline`, `PipelineBuilder`, six ordered stages, `Plugin` trait |
 | I/O | read one image from disk, write PNG/JPEG (`read_frame`, `write_frame`, `IoPlugin`) |
 | Filters | BT.601 grayscale, 3×3 Sobel magnitude |
 | Errors | typed `perceptor_core::Error` across kernels and I/O |
