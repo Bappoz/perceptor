@@ -14,6 +14,7 @@
 // e filtros de query são tuplas aninhadas por construção.
 #![allow(clippy::needless_pass_by_value, clippy::type_complexity)]
 
+pub mod errors;
 pub mod frame;
 pub mod pipeline;
 pub mod plugin;
@@ -21,6 +22,7 @@ pub mod plugins;
 pub mod prelude;
 pub mod schedule;
 
+pub use errors::{fallible, ErrorPolicy, PipelineErrors, SystemError};
 pub use frame::{Frame, FrameMeta};
 pub use pipeline::{despawn_processed_frames_system, Pipeline, PipelineBuilder, PipelineState};
 pub use plugin::Plugin;

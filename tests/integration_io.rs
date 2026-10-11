@@ -1,9 +1,11 @@
 //! Testes de integração: leitura e escrita de imagens via `IoPlugin`.
 
+use perceptor::core::Error;
 use perceptor::pipeline::{
     frame::Frame,
     pipeline::{Pipeline, PipelineState},
     plugins::io::IoPlugin,
+    ErrorPolicy,
 };
 
 fn create_test_png(path: &std::path::Path, width: u32, height: u32) {
@@ -47,12 +49,37 @@ fn reads_image_and_spawns_frame_entity() {
     assert_eq!(frames[0].width(), 4);
 }
 
-/// Verifica que path inválido define `should_stop=true` e não spawna frames.
+/// Caminho de entrada inválido: em `FailFast` (o padrão) `run()` devolve o erro.
 #[test]
-fn sets_should_stop_on_invalid_path() {
+fn invalid_input_path_makes_run_fail_in_fail_fast() {
+    let tmp = tempfile::tempdir().unwrap();
+    let missing = tmp.path().join("nonexistent_xyz.png");
+    let output = tmp.path().join("output_err.png");
+
+    let mut pipeline = Pipeline::builder()
+        .add_plugin(IoPlugin {
+            input_path: missing.clone(),
+            output_path: output.clone(),
+            ..Default::default()
+        })
+        .build();
+
+    let err = pipeline.run().unwrap_err();
+
+    assert!(matches!(&err, Error::Decode { path, .. } if path == &missing));
+    assert!(!output.exists(), "o stage de saída não roda depois do erro");
+    let world = pipeline.world_mut();
+    let mut q = world.query::<&Frame>();
+    assert_eq!(q.iter(world).count(), 0, "nenhum frame deve ser spawned");
+}
+
+/// Nas outras políticas o mesmo erro fica registrado e `run()` termina com `Ok`.
+#[test]
+fn invalid_input_path_is_recorded_without_failing_in_continue() {
     let tmp = tempfile::tempdir().unwrap();
 
     let mut pipeline = Pipeline::builder()
+        .with_error_policy(ErrorPolicy::Continue)
         .add_plugin(IoPlugin {
             input_path: tmp.path().join("nonexistent_xyz.png"),
             output_path: tmp.path().join("output_err.png"),
@@ -60,15 +87,62 @@ fn sets_should_stop_on_invalid_path() {
         })
         .build();
 
+    pipeline.run().unwrap();
+
+    assert!(pipeline.world().resource::<PipelineState>().should_stop);
+    let errors: Vec<_> = pipeline.errors().iter().collect();
+    assert_eq!(errors.len(), 1);
+    assert!(matches!(errors[0].error, Error::Decode { .. }));
+    assert_eq!(errors[0].frame, None);
+}
+
+/// Falha de escrita é um erro do frame: `SkipFrame` o descarta e o pipeline segue.
+#[test]
+fn unwritable_output_discards_the_frame_in_skip_frame() {
+    let tmp = tempfile::tempdir().unwrap();
+    let input = tmp.path().join("input.png");
+    create_test_png(&input, 4, 6);
+    let bad_output = tmp.path().join("pasta_inexistente").join("out.png");
+
+    let mut pipeline = Pipeline::builder()
+        .with_error_policy(ErrorPolicy::SkipFrame)
+        .add_plugin(IoPlugin {
+            input_path: input,
+            output_path: bad_output.clone(),
+            keep_frames: true,
+            ..Default::default()
+        })
+        .build();
+
+    pipeline.tick().unwrap();
     pipeline.tick().unwrap();
 
+    let errors: Vec<_> = pipeline.errors().iter().collect();
+    assert_eq!(errors.len(), 1);
+    assert!(matches!(&errors[0].error, Error::Encode { path, .. } if path == &bad_output));
+    assert!(errors[0].frame.is_some());
+    assert_eq!(pipeline.errors().total(), 2);
     let world = pipeline.world_mut();
-    assert!(
-        world.resource::<PipelineState>().should_stop,
-        "should_stop deve ser true para path inválido"
-    );
     let mut q = world.query::<&Frame>();
-    assert_eq!(q.iter(world).count(), 0, "nenhum frame deve ser spawned");
+    assert_eq!(q.iter(world).count(), 0, "frames com erro são descartados");
+}
+
+/// A mesma falha de escrita interrompe o pipeline em `FailFast`.
+#[test]
+fn unwritable_output_makes_tick_fail_in_fail_fast() {
+    let tmp = tempfile::tempdir().unwrap();
+    let input = tmp.path().join("input.png");
+    create_test_png(&input, 4, 6);
+
+    let mut pipeline = Pipeline::builder()
+        .add_plugin(IoPlugin {
+            input_path: input,
+            output_path: tmp.path().join("pasta_inexistente").join("out.png"),
+            ..Default::default()
+        })
+        .build();
+
+    assert!(matches!(pipeline.tick(), Err(Error::Encode { .. })));
 }
 
 /// Em uso contínuo os frames não se acumulam: cada um é despawnado depois da saída.

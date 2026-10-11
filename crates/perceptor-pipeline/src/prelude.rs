@@ -4,6 +4,7 @@
 
 // Core
 pub use crate::{
+    errors::{fallible, ErrorPolicy, PipelineErrors},
     frame::Frame,
     pipeline::{Pipeline, PipelineBuilder},
     plugin::Plugin,

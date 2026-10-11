@@ -20,8 +20,9 @@
 
 use bevy_ecs::prelude::*;
 use perceptor_imgproc::sobel::apply_sobel;
-use tracing::{trace, warn};
+use tracing::trace;
 
+use crate::errors::PipelineErrors;
 use crate::frame::Frame;
 use crate::plugins::filters::grayscale::GrayscaleTag;
 
@@ -43,9 +44,11 @@ pub struct SobelMap {
 ///
 /// Requer [`GrayscaleTag`] — só processa frames já convertidos para cinza.
 /// Registrado em `Stage::Process` pelo [`FiltersPlugin`](crate::plugins::filters::FiltersPlugin).
+/// Falhas do kernel são reportadas em [`PipelineErrors`] como erro do frame.
 pub fn sobel_system(
     query: Query<(Entity, &Frame), (With<GrayscaleTag>, Without<SobelTag>)>,
     mut commands: Commands,
+    mut errors: ResMut<PipelineErrors>,
 ) {
     for (entity, frame) in query.iter() {
         if frame.channels() != 1 {
@@ -66,7 +69,7 @@ pub fn sobel_system(
                     .entity(entity)
                     .insert((SobelMap { magnitude }, SobelTag));
             }
-            Err(e) => warn!(entity = ?entity, "sobel_system: {e}"),
+            Err(e) => errors.report_frame("sobel_system", entity, e),
         }
     }
 }

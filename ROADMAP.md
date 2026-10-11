@@ -63,7 +63,7 @@ Schedule único, erros, plugins, Frame multi-formato, métricas.
 
 - [x] #12 feat: DespawnSystem — remover entidades Frame processadas após output
 - [x] #39 refactor(pipeline): schedule único com SystemSets ordenados
-- [ ] #40 feat(pipeline): propagação de erros de sistemas com política configurável
+- [x] #40 feat(pipeline): propagação de erros de sistemas com política configurável
 - [ ] #41 feat(pipeline): deduplicação, dependências e cleanup de plugins
 - [ ] #42 feat(pipeline): Frame multi-formato sobre Image<P>
 - [ ] #43 feat(pipeline): métricas e spans de tracing por stage e sistema

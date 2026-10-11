@@ -26,6 +26,7 @@ Dependência só em uma direção: pipeline → imgproc → core.
 ## Convenções (não-negociáveis)
 - Algoritmo novo = função pura em `imgproc` + sistema fino em `pipeline`. Nunca lógica de pixel dentro de sistema.
 - API pública retorna `perceptor_core::Result`; `anyhow` só em `examples/`.
+- Sistema não engole erro com `warn!`: retorna `Result` via `fallible(...)` ou chama `PipelineErrors::report_frame`.
 - Teste que falha antes da implementação; otimização sempre comparada à versão escalar de referência.
 - Um chunk = uma issue = uma branch = um PR (`Closes #n`), com página de docs e changelog (`website/docs/projeto/changelog.md`) atualizados.
 - Trecho de código nos docs vem de `examples/` via `raw-loader`, não colado.

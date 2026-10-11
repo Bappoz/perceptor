@@ -2,11 +2,13 @@
 
 use std::path::Path;
 
+use bevy_ecs::entity::Entity;
 use bevy_ecs::system::{Query, Res, ResMut};
 use perceptor_core::{Error, Result};
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::{
+    errors::PipelineErrors,
     frame::Frame,
     pipeline::PipelineState,
     plugins::io::{config::ImageFormat, IoConfig},
@@ -41,21 +43,19 @@ pub fn write_frame(frame: &Frame, path: &Path, format: ImageFormat) -> Result<()
 
 /// Sistema ECS: salva todos os frames presentes no world no caminho configurado.
 /// Registrado em `Stage::Output` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
+///
+/// Uma falha de [`write_frame`] é reportada em [`PipelineErrors`] como erro
+/// do frame correspondente.
 pub fn image_writer_system(
-    query: Query<&Frame>,
+    query: Query<(Entity, &Frame)>,
     config: Res<IoConfig>,
     mut state: ResMut<PipelineState>,
+    mut errors: ResMut<PipelineErrors>,
 ) {
-    if config.output_path.as_os_str().is_empty() {
-        warn!("image_writer_system: output_path não configurado");
-        state.should_stop = true;
-        return;
-    }
-
-    for frame in query.iter() {
+    for (entity, frame) in &query {
         match write_frame(frame, &config.output_path, config.format) {
             Ok(()) => info!("image_writer_system: salvo em {:?}", config.output_path),
-            Err(e) => warn!("image_writer_system: {e}"),
+            Err(e) => errors.report_frame("image_writer_system", entity, e),
         }
     }
     state.should_stop = true;

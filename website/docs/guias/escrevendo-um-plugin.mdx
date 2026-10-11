@@ -4,6 +4,7 @@ title: Escrevendo um plugin
 
 import CodeBlock from '@theme/CodeBlock';
 import Example from '!!raw-loader!@site/../examples/custom_plugin.rs';
+import ErrorExample from '!!raw-loader!@site/../examples/error_policy.rs';
 
 # Escrevendo um plugin
 
@@ -20,6 +21,21 @@ cargo run --example custom_plugin
 - **Componente marcador**: `Without<InvertTag>` na query garante que cada frame seja processado uma única vez. Sem isso, o sistema inverteria o frame de novo a cada tick.
 - **`#[derive(Component)]`** exige `bevy_ecs` como dependência direta do seu projeto — veja [Instalação](../primeiros-passos/instalacao.md).
 - **Kernel separado**: `invert` pode ser testada sem montar um pipeline.
+
+## Sistemas que podem falhar
+
+Um sistema não deve engolir um erro com `warn!`. Há dois caminhos, conforme o alcance da falha:
+
+- retornar `Result<()>` e registrar com `fallible(sistema)`, quando o sistema inteiro falhou;
+- chamar `PipelineErrors::report_frame`, quando só um frame falhou.
+
+A reação do pipeline é a [`ErrorPolicy`](../conceitos/pipeline-e-stages.md#tratamento-de-erros).
+
+<CodeBlock language="rust" title="examples/error_policy.rs">{ErrorExample}</CodeBlock>
+
+```bash
+cargo run --example error_policy
+```
 
 ## Métodos de registro
 

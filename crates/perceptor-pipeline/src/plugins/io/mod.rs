@@ -14,6 +14,7 @@ use std::path::PathBuf;
 use bevy_ecs::prelude::*;
 
 use crate::{
+    errors::fallible,
     pipeline::{despawn_processed_frames_system, PipelineBuilder},
     plugin::Plugin,
     plugins::io::{config::ImageFormat, image_writer::image_writer_system},
@@ -55,7 +56,7 @@ impl Plugin for IoPlugin {
     }
 
     fn build(&self, builder: &mut PipelineBuilder) {
-        builder.add_input_system(image_reader_system);
+        builder.add_input_system(fallible(image_reader_system));
         builder.add_output_system(image_writer_system);
         if !self.keep_frames {
             builder.add_cleanup_system(despawn_processed_frames_system);

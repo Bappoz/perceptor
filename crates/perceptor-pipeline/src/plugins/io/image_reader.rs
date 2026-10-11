@@ -13,7 +13,7 @@ use std::path::Path;
 
 use bevy_ecs::prelude::*;
 use perceptor_core::{Error, Result};
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::frame::{Frame, FrameMeta};
 use crate::plugins::io::IoConfig;
@@ -34,26 +34,21 @@ pub fn read_frame(path: &Path, index: u64) -> Result<Frame> {
 }
 
 /// Sistema ECS: lê um frame da fonte configurada e o spawna como entidade.
-/// Registrado em `Stage::Input` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
+/// Registrado em `Stage::Input` pelo [`IoPlugin`](crate::plugins::io::IoPlugin),
+/// por meio de [`fallible`](crate::fallible).
+///
+/// # Errors
+/// O erro de [`read_frame`]. Como a fonte é um único arquivo, a falha também
+/// sinaliza parada em [`PipelineState`](crate::pipeline::PipelineState): sem
+/// isso, em uma política que não interrompe, o pipeline falharia a cada tick.
 pub fn image_reader_system(
     mut commands: Commands,
     mut config: ResMut<IoConfig>,
     mut state: ResMut<crate::pipeline::PipelineState>,
-) {
-    if config.input_path.as_os_str().is_empty() {
-        warn!("image_reader_system: IoConfig.source não configurado, pulando tick");
+) -> Result<()> {
+    let frame = read_frame(&config.input_path, config.next_index).inspect_err(|_| {
         state.should_stop = true;
-        return;
-    }
-
-    let frame = match read_frame(&config.input_path, config.next_index) {
-        Ok(frame) => frame,
-        Err(e) => {
-            warn!("image_reader_system: {e}");
-            state.should_stop = true;
-            return;
-        }
-    };
+    })?;
 
     info!(
         index = config.next_index,
@@ -66,4 +61,5 @@ pub fn image_reader_system(
 
     commands.spawn(frame);
     config.next_index += 1;
+    Ok(())
 }

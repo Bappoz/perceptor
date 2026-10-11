@@ -8,8 +8,11 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
 use bevy_ecs::system::ScheduleSystem;
 use perceptor_core::Result;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
+use crate::errors::{
+    discard_failed_frames, has_frames_to_discard, not_halted, ErrorPolicy, PipelineErrors,
+};
 use crate::frame::Frame;
 use crate::plugin::Plugin;
 use crate::schedule::Stage;
@@ -33,11 +36,16 @@ impl Pipeline {
 
     /// Executa um único tick: roda todos os stages em ordem.
     ///
+    /// Os erros reportados pelos sistemas ficam em [`Pipeline::errors`] até o
+    /// tick seguinte. O tick conta em [`PipelineState::tick_count`] mesmo
+    /// quando falha.
+    ///
     /// # Errors
-    /// Hoje nunca falha: sistemas registram erros em log. A propagação real
-    /// de erros é o objetivo da issue #40.
+    /// Em [`ErrorPolicy::FailFast`], o primeiro erro reportado por um sistema
+    /// neste tick. Nas outras políticas nunca falha.
     pub fn tick(&mut self) -> Result<()> {
         debug!("pipeline tick");
+        self.world.resource_mut::<PipelineErrors>().begin_tick();
         self.schedule.run(&mut self.world);
 
         let mut state = self.world.resource_mut::<PipelineState>();
@@ -48,6 +56,15 @@ impl Pipeline {
             }
         }
 
+        let mut errors = self.world.resource_mut::<PipelineErrors>();
+        for failure in errors.iter() {
+            warn!(system = failure.system, frame = ?failure.frame, "{}", failure.error);
+        }
+        if errors.policy() == ErrorPolicy::FailFast {
+            if let Some(first) = errors.take_first() {
+                return Err(first.error);
+            }
+        }
         Ok(())
     }
 
@@ -56,7 +73,8 @@ impl Pipeline {
     /// A condição de parada é controlada pelo recurso [`PipelineState`].
     ///
     /// # Errors
-    /// Propaga o primeiro erro retornado por [`Pipeline::tick`].
+    /// Propaga o primeiro erro retornado por [`Pipeline::tick`], o que só
+    /// acontece em [`ErrorPolicy::FailFast`].
     pub fn run(&mut self) -> Result<()> {
         info!("Perceptor pipeline started");
         loop {
@@ -69,6 +87,15 @@ impl Pipeline {
             }
         }
         Ok(())
+    }
+
+    /// Erros reportados pelos sistemas no tick mais recente.
+    ///
+    /// # Panics
+    /// Se o recurso [`PipelineErrors`] tiver sido removido do `World`.
+    #[must_use]
+    pub fn errors(&self) -> &PipelineErrors {
+        self.world.resource::<PipelineErrors>()
     }
 
     /// Acesso direto ao `World` (para testes e introspecção).
@@ -100,8 +127,24 @@ impl Default for PipelineBuilder {
         // A tupla sai de `Stage::ALL` para a ordem ter uma única fonte.
         let [input, pre, process, post, output, cleanup] = Stage::ALL;
         schedule.configure_sets((input, pre, process, post, output, cleanup).chain());
+
+        // Um erro em `FailFast` impede os stages seguintes de rodar; em
+        // `SkipFrame` os frames com erro saem antes do stage seguinte.
+        for (i, stage) in Stage::ALL.into_iter().enumerate() {
+            schedule.configure_sets(stage.run_if(not_halted));
+            let discard = discard_failed_frames
+                .run_if(has_frames_to_discard)
+                .after(stage);
+            match Stage::ALL.get(i + 1) {
+                Some(&next) => schedule.add_systems(discard.before(next)),
+                None => schedule.add_systems(discard),
+            };
+        }
+
+        let mut world = World::default();
+        world.init_resource::<PipelineErrors>();
         Self {
-            world: World::default(),
+            world,
             plugins: Vec::new(),
             schedule,
             max_ticks: None,
@@ -117,6 +160,15 @@ impl PipelineBuilder {
     #[must_use]
     pub fn with_max_ticks(mut self, n: u64) -> Self {
         self.max_ticks = Some(n);
+        self
+    }
+
+    /// Define a reação a erros de sistemas. O padrão é [`ErrorPolicy::FailFast`].
+    #[must_use]
+    pub fn with_error_policy(mut self, policy: ErrorPolicy) -> Self {
+        self.world
+            .resource_mut::<PipelineErrors>()
+            .set_policy(policy);
         self
     }
 
