@@ -5,7 +5,7 @@
 // Core
 pub use crate::{
     errors::{fallible, ErrorPolicy, PipelineErrors},
-    frame::Frame,
+    frame::{Frame, FrameData, FrameMeta},
     pipeline::{Pipeline, PipelineBuilder},
     plugin::Plugin,
     schedule::Stage,
@@ -18,5 +18,7 @@ pub use crate::plugins::{filters::FiltersPlugin, io::IoPlugin, ml::MlPlugin};
 pub use bevy_ecs::prelude::{
     Commands, Component, Entity, Query, Res, ResMut, Resource, With, Without, World,
 };
-pub use ndarray::Array3;
-pub use perceptor_core::{Error, Result};
+pub use perceptor_core::{
+    Bgr8, Error, Image, ImageView, ImageViewMut, La8, Pixel, PixelFormat, Result, Rgb8, RgbF32,
+    Rgba8, L16, L8, LF32,
+};

@@ -9,12 +9,11 @@ use perceptor_pipeline::{fallible, ErrorPolicy, Pipeline, PipelineBuilder, Pipel
 struct Seen(Vec<u64>);
 
 fn frame(index: u64) -> Frame {
-    let meta = FrameMeta {
-        index,
-        timestamp_us: 0,
-        source: "test".into(),
-    };
-    Frame::new(meta, ndarray::Array3::zeros((2, 2, 1)))
+    let meta = FrameMeta::new(index, "test");
+    Frame::new(
+        meta,
+        perceptor_core::Image::<perceptor_core::L8>::new(2, 2).unwrap(),
+    )
 }
 
 fn always_fails() -> Result<()> {

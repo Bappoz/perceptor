@@ -44,7 +44,7 @@ O sistema ECS correspondente fica reduzido a: consultar frames, chamar o kernel 
 
 ```rust
 // perceptor-imgproc: função pura
-pub fn convert_to_gray(input: &Array3<u8>) -> Array3<u8> { /* ... */ }
+pub fn convert_to_gray(input: ImageView<'_, Rgb8>) -> Result<Image<L8>> { /* ... */ }
 
 // perceptor-pipeline: sistema que a orquestra
 pub fn grayscale_system(
@@ -52,7 +52,9 @@ pub fn grayscale_system(
     mut commands: Commands,
 ) {
     for (entity, mut frame) in &mut query {
-        frame.data = convert_to_gray(&frame.data);
+        let Ok(rgb) = frame.as_image::<Rgb8>() else { continue };
+        let gray = convert_to_gray(rgb.view())?; // o sistema real reporta o erro
+        frame.data = gray.into();
         commands.entity(entity).insert(GrayscaleTag);
     }
 }
@@ -64,14 +66,21 @@ pub fn grayscale_system(
 classDiagram
     class Frame {
         +FrameMeta meta
-        +Array3~u8~ data
-        +height() usize
+        +FrameData data
+        +format() PixelFormat
+        +as_image~P~() Result~Image~P~~
         +width() usize
-        +channels() usize
+        +height() usize
     }
+    class FrameData {
+        <<enum>>
+        L8 · La8 · Rgb8 · Rgba8
+        Bgr8 · L16 · LF32 · RgbF32
+    }
+    Frame --> FrameData
     class GrayscaleTag
     class SobelMap {
-        +Array3~u8~ magnitude
+        +Image~L8~ magnitude
     }
     class SobelTag
     Frame --> GrayscaleTag : após grayscale_system
@@ -79,7 +88,25 @@ classDiagram
     Frame --> SobelTag : após sobel_system
 ```
 
-Hoje `Frame` guarda um tensor `ndarray` no formato `[altura, largura, canais]` com valores `u8`. No milestone M1 ele passa a usar o tipo de imagem próprio de `perceptor-core`, com formato de pixel no tipo e layout controlado.
+### `Frame` e formato de pixel
+
+Um `Frame` carrega uma [`Image<P>`](modelo-de-imagem.md) em qualquer formato. Como uma query ECS não pode ser genérica sobre o formato de cada entidade, o tipo é apagado em `FrameData` (um enum com uma variante por formato) e recuperado no ponto de uso:
+
+```rust
+let rgb: &Image<Rgb8> = frame.as_image::<Rgb8>()?;   // Err(FormatMismatch) se não for RGB8
+let gray: &mut Image<L8> = frame.as_image_mut::<L8>()?;
+frame.data = nova_imagem.into();                      // trocar o formato do frame
+```
+
+| Acesso | Formato errado |
+|---|---|
+| `frame.as_image::<P>()` / `as_image_mut::<P>()` | `Err(Error::FormatMismatch { expected, actual })` |
+| `frame.data.into_image::<P>()` | `Err(dados)` — devolve os dados intactos |
+| `frame.format()` | — devolve o `PixelFormat` em runtime |
+
+Nenhum desses caminhos entra em pânico, e nenhum converte pixels implicitamente: `Bgr8` não é aceito onde se pede `Rgb8`. Um sistema que só trata um formato ignora os demais com `let Ok(..) = .. else { continue }`, ou reporta o erro em [`PipelineErrors`](pipeline-e-stages.md#tratamento-de-erros).
+
+`FrameMeta` tem `index`, `timestamp` (`Duration` desde o início do stream) e `source` (`Arc<str>`, compartilhado por todos os frames da mesma fonte). `FrameMeta::new(index, source)` cria com timestamp zero.
 
 ## Decisões
 

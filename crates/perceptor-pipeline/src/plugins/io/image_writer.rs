@@ -4,7 +4,7 @@ use std::path::Path;
 
 use bevy_ecs::entity::Entity;
 use bevy_ecs::system::{Query, Res, ResMut};
-use perceptor_core::{Error, Result};
+use perceptor_core::{Error, PixelFormat, Result};
 use tracing::info;
 
 use crate::{
@@ -16,20 +16,25 @@ use crate::{
 
 /// Codifica um [`Frame`] e o grava em `path`.
 ///
-/// Aceita frames de 1 (L), 3 (RGB) ou 4 (RGBA) canais.
+/// Aceita frames em `L8`, `La8`, `Rgb8`, `Rgba8` e `L16`.
 ///
 /// # Errors
-/// - [`Error::UnsupportedChannels`] para outros números de canais.
-/// - [`Error::NonContiguous`] se o tensor não estiver em ordem de linha.
-/// - [`Error::Encode`] se as dimensões excederem `u32` ou a gravação falhar.
+/// - [`Error::UnsupportedFormat`] para os demais formatos (`Bgr8` e ponto
+///   flutuante): nenhum deles é convertido implicitamente.
+/// - [`Error::Encode`] se as dimensões excederem `u32`, se o formato de
+///   arquivo não comportar o formato de pixel (ex.: `L16` em JPEG) ou se a
+///   gravação falhar.
 pub fn write_frame(frame: &Frame, path: &Path, format: ImageFormat) -> Result<()> {
-    let color = match frame.channels() {
-        1 => image::ColorType::L8,
-        3 => image::ColorType::Rgb8,
-        4 => image::ColorType::Rgba8,
-        channels => return Err(Error::UnsupportedChannels { channels }),
+    let color = match frame.format() {
+        PixelFormat::L8 => image::ColorType::L8,
+        PixelFormat::La8 => image::ColorType::La8,
+        PixelFormat::Rgb8 => image::ColorType::Rgb8,
+        PixelFormat::Rgba8 => image::ColorType::Rgba8,
+        PixelFormat::L16 => image::ColorType::L16,
+        format => return Err(Error::UnsupportedFormat { format }),
     };
-    let raw = frame.data.as_slice().ok_or(Error::NonContiguous)?;
+    // `image` espera os subpixels de 16 bits na ordem de bytes nativa.
+    let raw = frame.data.as_bytes();
     let width = u32::try_from(frame.width()).map_err(|e| Error::encode(path, e))?;
     let height = u32::try_from(frame.height()).map_err(|e| Error::encode(path, e))?;
     let format = match format {

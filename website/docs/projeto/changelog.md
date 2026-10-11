@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M2 — Pipeline v2 (em andamento)
 
+- `Frame` multi-formato: `data` passa de `Array3<u8>` para `FrameData`, com acesso tipado `as_image::<P>()` que retorna `FormatMismatch` em vez de entrar em pânico. `FrameMeta` usa `Arc<str>` e `Duration`. Os kernels `convert_to_gray` e `apply_sobel` operam sobre `ImageView`/`Image`, o escritor grava `La8` e `L16`, e `ndarray` sai de `perceptor-imgproc` e `perceptor-pipeline` ([#42](https://github.com/Bappoz/perceptor/issues/42)).
 - Contrato de `Plugin` cumprido: `PipelineBuilder::build()` passa a retornar `Result` e rejeita plugin duplicado ou dependência ausente (`Plugin::dependencies`); `Plugin::cleanup` recebe `&mut World` e é chamado em `Pipeline::shutdown()` ou no `Drop`, em ordem inversa de registro ([#41](https://github.com/Bappoz/perceptor/issues/41)).
 - Erros de sistemas deixam de ser engolidos: recurso `PipelineErrors`, adaptador `fallible` e `ErrorPolicy` (`FailFast`, `SkipFrame`, `Continue`). O padrão é `FailFast`, então `tick()`/`run()` agora retornam `Err` onde antes só havia um `warn!`; `image_reader_system` passa a retornar `Result` ([#40](https://github.com/Bappoz/perceptor/issues/40)).
 - Schedule único: `Stage` vira um `SystemSet` com seis variantes encadeadas e `add_system(Stage::X, …)`; grayscale e Sobel passam a rodar no mesmo tick. Os tipos `InputStage`…`CleanupStage` e `STAGE_ORDER` foram removidos ([#39](https://github.com/Bappoz/perceptor/issues/39)).

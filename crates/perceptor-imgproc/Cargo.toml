@@ -9,7 +9,6 @@ repository.workspace = true
 
 [dependencies]
 perceptor-core.workspace = true
-ndarray.workspace = true
 rayon.workspace = true
 
 [lints]

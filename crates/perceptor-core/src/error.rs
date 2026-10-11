@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::Rect;
+use crate::{PixelFormat, Rect};
 
 /// Causa arbitrária preservada dentro de um [`Error`].
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
@@ -127,6 +127,22 @@ pub enum Error {
         /// Erro original do codificador ou do sistema de arquivos.
         #[source]
         source: BoxError,
+    },
+
+    /// O formato de pixel dos dados não é o que a operação pediu.
+    #[error("esperado formato {expected:?}, recebido {actual:?}")]
+    FormatMismatch {
+        /// Formato pedido.
+        expected: PixelFormat,
+        /// Formato dos dados.
+        actual: PixelFormat,
+    },
+
+    /// O formato de pixel não tem representação no destino (ex.: formato de arquivo).
+    #[error("formato de pixel não suportado: {format:?}")]
+    UnsupportedFormat {
+        /// Formato dos dados.
+        format: PixelFormat,
     },
 
     /// Dois plugins com o mesmo nome foram registrados no pipeline.

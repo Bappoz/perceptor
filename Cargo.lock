@@ -815,7 +815,6 @@ dependencies = [
 name = "perceptor-imgproc"
 version = "0.1.0"
 dependencies = [
- "ndarray",
  "perceptor-core",
  "rayon",
 ]
@@ -826,7 +825,6 @@ version = "0.1.0"
 dependencies = [
  "bevy_ecs",
  "image",
- "ndarray",
  "perceptor-core",
  "perceptor-imgproc",
  "tempfile",
