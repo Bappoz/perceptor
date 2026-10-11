@@ -839,6 +839,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "image",
+ "ndarray",
  "perceptor-core",
  "proptest",
  "tempfile",

@@ -10,6 +10,7 @@
 //! | [`strategies`] | estratégias `proptest` de imagens |
 //! | [`compare`] | diferença máxima, MSE e PSNR entre imagens |
 //! | [`golden`] | imagens de referência em PNG, com receita de regeneração |
+//! | [`fuzz`] | corpo dos alvos de fuzzing de `perceptor-core`, rodável também em `cargo test` |
 //!
 //! E duas macros: [`assert_images_eq!`] e [`assert_golden!`].
 //!
@@ -18,6 +19,7 @@
 //! os tipos `Image<P>` de cada uma seriam incompatíveis.
 
 pub mod compare;
+pub mod fuzz;
 pub mod golden;
 pub mod patterns;
 pub mod strategies;

@@ -55,7 +55,7 @@ Image<P>, views, formatos de pixel, bordas, pool e infra de testes.
 - [x] #35 feat(core): interop com as crates image e ndarray por feature
 - [x] #36 feat(core): BufferPool para reutilização de buffers por frame
 - [x] #37 test(core): infraestrutura de proptest, golden images e geradores sintéticos
-- [ ] #38 fuzz(core): harness cargo-fuzz para construtores e conversões de Image
+- [x] #38 fuzz(core): harness cargo-fuzz para construtores e conversões de Image
 
 ## M2 — Pipeline v2
 

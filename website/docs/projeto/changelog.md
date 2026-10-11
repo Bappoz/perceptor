@@ -6,8 +6,9 @@ title: Changelog
 
 Mudanças por milestone, da mais recente para a mais antiga.
 
-## M1 — Core de imagem (em andamento)
+## M1 — Core de imagem
 
+- Fuzzing de `perceptor-core` com `cargo-fuzz`: construtores, geometria de visões/ROI/bordas e interop com `ndarray` e `image`, com oráculos independentes e smoke test no CI ([#38](https://github.com/Bappoz/perceptor/issues/38)).
 - `perceptor-testkit`: padrões sintéticos, estratégias `proptest`, comparadores (diferença máxima, MSE, PSNR), `assert_images_eq!` com diff legível e golden images em PNG com regeneração por variável de ambiente ([#37](https://github.com/Bappoz/perceptor/issues/37)).
 - `BufferPool`: reutilização de buffers por `(dimensões, formato)` com devolução no `Drop`, limite de memória ociosa e uso concorrente ([#36](https://github.com/Bappoz/perceptor/issues/36)).
 - Interoperabilidade com `image::ImageBuffer` e `ndarray::ArrayView3`, sem cópia nos dois sentidos quando o layout permite ([#35](https://github.com/Bappoz/perceptor/issues/35)).
