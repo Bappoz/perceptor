@@ -19,7 +19,7 @@ use crate::{Error, Pixel, Result};
 /// Unidade de alocação: 64 bytes alinhados a 64.
 #[derive(Clone, Copy, Pod, Zeroable)]
 #[repr(C, align(64))]
-struct Block([u8; 64]);
+pub(crate) struct Block([u8; 64]);
 
 /// Imagem `width × height` de pixels `P`, dona do buffer.
 ///
@@ -127,6 +127,31 @@ impl<P: Pixel> Image<P> {
     /// - Os mesmos de [`Image::from_vec`].
     pub fn from_subpixels(width: usize, height: usize, subpixels: &[P::Subpixel]) -> Result<Self> {
         Self::from_pixels(width, height, P::cast_slice(subpixels)?)
+    }
+
+    /// Número de blocos de 64 bytes que `width × height` pixels ocupam.
+    ///
+    /// Valida as dimensões como [`Image::new`].
+    pub(crate) fn block_count(width: usize, height: usize) -> Result<usize> {
+        Self::checked_byte_len(width, height).map(|bytes| bytes.div_ceil(size_of::<Block>()))
+    }
+
+    /// Reaproveita um buffer vindo de [`Image::into_blocks`]; o conteúdo é o que sobrou.
+    ///
+    /// `blocks.len()` precisa ser exatamente [`Image::block_count`].
+    pub(crate) fn from_blocks(width: usize, height: usize, blocks: Vec<Block>) -> Self {
+        debug_assert_eq!(Self::block_count(width, height).ok(), Some(blocks.len()));
+        Self {
+            blocks,
+            width,
+            height,
+            _pixel: PhantomData,
+        }
+    }
+
+    /// Desfaz a imagem, devolvendo o buffer sem zerá-lo.
+    pub(crate) fn into_blocks(self) -> Vec<Block> {
+        self.blocks
     }
 
     /// Largura em pixels.
