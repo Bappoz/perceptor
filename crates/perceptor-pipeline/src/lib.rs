@@ -4,7 +4,7 @@
 //!
 //! Frames são **Entidades**, transformações são **Sistemas** e os resultados
 //! de cada etapa são **Componentes**. O [`Pipeline`] executa os stages em
-//! ordem a cada tick; [`Plugin`]s registram sistemas nos stages corretos.
+//! ordem a cada tick; [`Plugin`]s registram sistemas no [`Stage`] correto.
 //!
 //! Os algoritmos em si vivem em `perceptor-imgproc` como funções puras —
 //! esta crate apenas os conecta ao `World`.
@@ -24,3 +24,4 @@ pub mod schedule;
 pub use frame::{Frame, FrameMeta};
 pub use pipeline::{despawn_processed_frames_system, Pipeline, PipelineBuilder, PipelineState};
 pub use plugin::Plugin;
+pub use schedule::Stage;

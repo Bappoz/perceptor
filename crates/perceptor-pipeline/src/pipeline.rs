@@ -1,9 +1,8 @@
 //! `Pipeline` e `PipelineBuilder`: ponto de entrada do motor ECS.
 //!
-//! O `Pipeline` encapsula o `bevy_ecs::World` e os `Schedule`s de cada
-//! fase. A cada chamada de `tick()` ele executa os stages em ordem,
-//! processando todos os frames que estiverem no world naquele momento, e
-//! termina com o `CleanupStage`, que remove o que já foi consumido.
+//! O `Pipeline` encapsula o `bevy_ecs::World` e um único `Schedule` em que
+//! cada [`Stage`] é um `SystemSet`. A cada `tick()` o schedule roda uma vez:
+//! os stages em ordem, com os `Commands` de um aplicados antes do seguinte.
 
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
@@ -13,19 +12,15 @@ use tracing::{debug, info};
 
 use crate::frame::Frame;
 use crate::plugin::Plugin;
+use crate::schedule::Stage;
 
 /// Motor principal do pipeline de CV.
 ///
-/// Mantém o `World` do ECS e os `Schedule`s de cada fase.
+/// Mantém o `World` do ECS e o `Schedule` com todos os stages.
 /// Use [`PipelineBuilder`] para construí-lo.
 pub struct Pipeline {
     world: World,
-    input_schedule: Schedule,
-    pre_process_schedule: Schedule,
-    process_schedule: Schedule,
-    post_process_schedule: Schedule,
-    output_schedule: Schedule,
-    cleanup_schedule: Schedule,
+    schedule: Schedule,
     max_ticks: Option<u64>,
 }
 
@@ -42,23 +37,8 @@ impl Pipeline {
     /// Hoje nunca falha: sistemas registram erros em log. A propagação real
     /// de erros é o objetivo da issue #40.
     pub fn tick(&mut self) -> Result<()> {
-        debug!("pipeline tick: InputStage");
-        self.input_schedule.run(&mut self.world);
-
-        debug!("pipeline tick: PreProcessStage");
-        self.pre_process_schedule.run(&mut self.world);
-
-        debug!("pipeline tick: ProcessStage");
-        self.process_schedule.run(&mut self.world);
-
-        debug!("pipeline tick: PostProcessStage");
-        self.post_process_schedule.run(&mut self.world);
-
-        debug!("pipeline tick: OutputStage");
-        self.output_schedule.run(&mut self.world);
-
-        debug!("pipeline tick: CleanupStage");
-        self.cleanup_schedule.run(&mut self.world);
+        debug!("pipeline tick");
+        self.schedule.run(&mut self.world);
 
         let mut state = self.world.resource_mut::<PipelineState>();
         state.tick_count += 1;
@@ -105,17 +85,28 @@ impl Pipeline {
 // ── PipelineBuilder ────────────────────────────────────────────────────────────
 
 /// Builder fluente para configurar um [`Pipeline`].
-#[derive(Default)]
 pub struct PipelineBuilder {
     world: World,
     plugins: Vec<Box<dyn Plugin>>,
-    input_schedule: Schedule,
-    pre_process_schedule: Schedule,
-    process_schedule: Schedule,
-    post_process_schedule: Schedule,
-    output_schedule: Schedule,
-    cleanup_schedule: Schedule,
+    schedule: Schedule,
     max_ticks: Option<u64>,
+}
+
+impl Default for PipelineBuilder {
+    fn default() -> Self {
+        let mut schedule = Schedule::default();
+        // Encadear os sets ordena os stages e faz o bevy inserir um ponto de
+        // sincronização (flush de `Commands`) entre dois stages consecutivos.
+        // A tupla sai de `Stage::ALL` para a ordem ter uma única fonte.
+        let [input, pre, process, post, output, cleanup] = Stage::ALL;
+        schedule.configure_sets((input, pre, process, post, output, cleanup).chain());
+        Self {
+            world: World::default(),
+            plugins: Vec::new(),
+            schedule,
+            max_ticks: None,
+        }
+    }
 }
 
 impl PipelineBuilder {
@@ -140,60 +131,68 @@ impl PipelineBuilder {
         self
     }
 
-    /// Registra um sistema no `InputStage`.
+    /// Registra um ou mais sistemas em `stage`.
+    ///
+    /// Sistemas do mesmo stage não têm ordem entre si. Para ordená-los, passe
+    /// uma tupla encadeada — `(a, b).chain()` — ou use `.before()`/`.after()`;
+    /// os `Commands` de `a` já estarão aplicados quando `b` rodar.
+    pub fn add_system<M>(
+        &mut self,
+        stage: Stage,
+        systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
+        self.schedule.add_systems(systems.in_set(stage));
+        self
+    }
+
+    /// Atalho para [`add_system`](Self::add_system) com [`Stage::Input`].
     pub fn add_input_system<M>(
         &mut self,
         system: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        self.input_schedule.add_systems(system);
-        self
+        self.add_system(Stage::Input, system)
     }
 
-    /// Registra um sistema no `PreProcessStage`.
+    /// Atalho para [`add_system`](Self::add_system) com [`Stage::PreProcess`].
     pub fn add_pre_process_system<M>(
         &mut self,
         system: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        self.pre_process_schedule.add_systems(system);
-        self
+        self.add_system(Stage::PreProcess, system)
     }
 
-    /// Registra um sistema no `ProcessStage`.
+    /// Atalho para [`add_system`](Self::add_system) com [`Stage::Process`].
     pub fn add_process_system<M>(
         &mut self,
         system: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        self.process_schedule.add_systems(system);
-        self
+        self.add_system(Stage::Process, system)
     }
 
-    /// Registra um sistema no `PostProcessStage`.
+    /// Atalho para [`add_system`](Self::add_system) com [`Stage::PostProcess`].
     pub fn add_post_process_system<M>(
         &mut self,
         system: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        self.post_process_schedule.add_systems(system);
-        self
+        self.add_system(Stage::PostProcess, system)
     }
 
-    /// Registra um sistema no `OutputStage`.
+    /// Atalho para [`add_system`](Self::add_system) com [`Stage::Output`].
     pub fn add_output_system<M>(
         &mut self,
         system: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        self.output_schedule.add_systems(system);
-        self
+        self.add_system(Stage::Output, system)
     }
 
-    /// Registra um sistema no `CleanupStage`, que roda depois de todos os
-    /// sistemas de saída. É onde entidades já consumidas são removidas; ver
-    /// [`despawn_processed_frames_system`].
+    /// Atalho para [`add_system`](Self::add_system) com [`Stage::Cleanup`], que
+    /// roda depois de todos os sistemas de saída. É onde entidades já
+    /// consumidas são removidas; ver [`despawn_processed_frames_system`].
     pub fn add_cleanup_system<M>(
         &mut self,
         system: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        self.cleanup_schedule.add_systems(system);
-        self
+        self.add_system(Stage::Cleanup, system)
     }
 
     /// Constrói o [`Pipeline`] a partir da configuração atual.
@@ -209,12 +208,7 @@ impl PipelineBuilder {
 
         Pipeline {
             world: self.world,
-            input_schedule: self.input_schedule,
-            pre_process_schedule: self.pre_process_schedule,
-            process_schedule: self.process_schedule,
-            post_process_schedule: self.post_process_schedule,
-            output_schedule: self.output_schedule,
-            cleanup_schedule: self.cleanup_schedule,
+            schedule: self.schedule,
             max_ticks: self.max_ticks,
         }
     }
@@ -229,7 +223,7 @@ impl PipelineBuilder {
 
 /// Sistema ECS: remove toda entidade com [`Frame`], com os demais componentes dela.
 ///
-/// Registre no `CleanupStage` ([`PipelineBuilder::add_cleanup_system`]) para que
+/// Registre em [`Stage::Cleanup`] ([`PipelineBuilder::add_cleanup_system`]) para que
 /// um pipeline contínuo não acumule um frame por tick. O
 /// [`IoPlugin`](crate::plugins::io::IoPlugin) já o registra, a menos que
 /// `keep_frames` esteja ligado.
@@ -343,5 +337,73 @@ mod tests {
         pipeline.tick().unwrap();
         let world = pipeline.world_mut();
         assert_eq!(world.query::<&Frame>().iter(world).count(), 1);
+    }
+
+    #[test]
+    fn stages_run_in_canonical_order_regardless_of_registration_order() {
+        let mut builder = Pipeline::builder();
+        builder.world_mut().init_resource::<Seen>();
+        // Registrados de trás para frente.
+        builder.add_system(Stage::Cleanup, |mut s: ResMut<Seen>| s.0.push("cleanup"));
+        builder.add_system(Stage::Output, |mut s: ResMut<Seen>| s.0.push("output"));
+        builder.add_system(Stage::PostProcess, |mut s: ResMut<Seen>| s.0.push("post"));
+        builder.add_system(Stage::Process, |mut s: ResMut<Seen>| s.0.push("process"));
+        builder.add_system(Stage::PreProcess, |mut s: ResMut<Seen>| s.0.push("pre"));
+        builder.add_system(Stage::Input, |mut s: ResMut<Seen>| s.0.push("input"));
+        let mut pipeline = builder.build();
+
+        pipeline.tick().unwrap();
+        assert_eq!(
+            pipeline.world().resource::<Seen>().0,
+            ["input", "pre", "process", "post", "output", "cleanup"]
+        );
+        assert_eq!(Stage::ALL.len(), 6);
+    }
+
+    #[test]
+    fn commands_from_one_stage_are_visible_in_the_next_within_the_same_tick() {
+        #[derive(Component)]
+        struct Marked;
+
+        let mut builder = Pipeline::builder();
+        builder.world_mut().init_resource::<Seen>();
+        builder.add_system(Stage::Input, |mut commands: Commands| {
+            commands.spawn(Marked);
+        });
+        builder.add_system(
+            Stage::PreProcess,
+            |marked: Query<(), With<Marked>>, mut seen: ResMut<Seen>| {
+                if !marked.is_empty() {
+                    seen.0.push("pre saw it");
+                }
+            },
+        );
+        let mut pipeline = builder.build();
+
+        pipeline.tick().unwrap();
+        assert_eq!(pipeline.world().resource::<Seen>().0, ["pre saw it"]);
+    }
+
+    #[test]
+    fn systems_in_the_same_stage_can_be_ordered() {
+        #[derive(Component)]
+        struct Marked;
+
+        fn first(mut commands: Commands) {
+            commands.spawn(Marked);
+        }
+        fn second(marked: Query<(), With<Marked>>, mut seen: ResMut<Seen>) {
+            if !marked.is_empty() {
+                seen.0.push("second saw it");
+            }
+        }
+
+        let mut builder = Pipeline::builder();
+        builder.world_mut().init_resource::<Seen>();
+        builder.add_system(Stage::Process, (first, second).chain());
+        let mut pipeline = builder.build();
+
+        pipeline.tick().unwrap();
+        assert_eq!(pipeline.world().resource::<Seen>().0, ["second saw it"]);
     }
 }

@@ -1,8 +1,8 @@
 //! Testes de integração: pipeline completo de filtros e I/O.
 //!
-//! Nota: `grayscale_system` e `sobel_system` compartilham o `ProcessStage`, mas os
-//! comandos ECS são flushed ao final do schedule. O `GrayscaleTag` inserido pelo
-//! `grayscale_system` só é visível ao `sobel_system` no tick seguinte.
+//! `grayscale_system` e `sobel_system` compartilham o stage `Process`; o
+//! `FiltersPlugin` os encadeia, então o `GrayscaleTag` já é visível ao Sobel no
+//! mesmo tick.
 
 use perceptor::{
     pipeline::{
@@ -55,7 +55,7 @@ fn io_pipeline_writes_grayscale_output() {
     );
 }
 
-/// Pipeline de filtros com frame injetado: grayscale no tick 1, sobel no tick 2.
+/// Pipeline de filtros com frame injetado: grayscale e Sobel no mesmo tick.
 #[test]
 fn filter_chain_grayscale_then_sobel() {
     let mut pipeline = Pipeline::builder().add_plugin(FiltersPlugin::all()).build();
@@ -79,27 +79,52 @@ fn filter_chain_grayscale_then_sobel() {
     };
     pipeline.world_mut().spawn(Frame::new(meta, data));
 
-    // Tick 1: grayscale_system converte RGB → cinza e insere GrayscaleTag
+    // Um tick basta: o Sobel é ordenado depois do grayscale e enxerga o `GrayscaleTag`.
     pipeline.tick().unwrap();
-    {
-        let world = pipeline.world_mut();
-        let mut q = world.query::<(&Frame, &GrayscaleTag)>();
-        // single() verifica implicitamente que existe exatamente 1 resultado
-        let (frame, _) = q.single(world).unwrap();
-        assert_eq!(frame.channels(), 1, "frame deve ser grayscale (1 canal)");
-    }
 
-    // Tick 2: sobel_system encontra GrayscaleTag e insere SobelTag + SobelMap
+    let world = pipeline.world_mut();
+    let mut q = world.query::<(&Frame, &GrayscaleTag, &SobelTag, &SobelMap)>();
+    // single() verifica implicitamente que existe exatamente 1 resultado
+    let (frame, _, _, sobel) = q.single(world).unwrap();
+    assert_eq!(frame.channels(), 1, "frame deve ser grayscale (1 canal)");
+    assert_eq!(sobel.magnitude.shape(), &[8, 8, 1]);
+    assert!(
+        (1..7usize).any(|x| sobel.magnitude[[4, x, 0]] > 100),
+        "borda horizontal em y=4 deve ter alta resposta Sobel"
+    );
+}
+
+/// Com `IoPlugin` o frame vive um tick: o Sobel tem de sair antes do despawn.
+#[test]
+fn io_pipeline_computes_sobel_before_the_frame_is_despawned() {
+    use perceptor::pipeline::Stage;
+    use perceptor::prelude::{Query, ResMut, Resource};
+
+    #[derive(Resource, Default)]
+    struct SobelSeen(usize);
+
+    let tmp = tempfile::tempdir().unwrap();
+    let input = tmp.path().join("input_sobel.png");
+    create_edge_png(&input);
+
+    let mut builder = Pipeline::builder()
+        .add_plugin(perceptor::pipeline::plugins::io::IoPlugin {
+            input_path: input,
+            output_path: tmp.path().join("output_sobel.png"),
+            ..Default::default()
+        })
+        .add_plugin(FiltersPlugin::all());
+    builder.world_mut().init_resource::<SobelSeen>();
+    builder.add_system(
+        Stage::Output,
+        |maps: Query<&SobelMap>, mut seen: ResMut<SobelSeen>| seen.0 += maps.iter().count(),
+    );
+    let mut pipeline = builder.build();
+
     pipeline.tick().unwrap();
-    {
-        let world = pipeline.world_mut();
-        let mut q = world.query::<(&Frame, &GrayscaleTag, &SobelTag, &SobelMap)>();
-        let (frame, _, _, sobel) = q.single(world).unwrap();
-        assert_eq!(frame.channels(), 1);
-        assert_eq!(sobel.magnitude.shape(), &[8, 8, 1]);
-        assert!(
-            (1..7usize).any(|x| sobel.magnitude[[4, x, 0]] > 100),
-            "borda horizontal em y=4 deve ter alta resposta Sobel"
-        );
-    }
+    pipeline.tick().unwrap();
+
+    assert_eq!(pipeline.world().resource::<SobelSeen>().0, 2);
+    let world = pipeline.world_mut();
+    assert_eq!(world.query::<&Frame>().iter(world).count(), 0);
 }

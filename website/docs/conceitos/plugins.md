@@ -25,7 +25,7 @@ pub trait Plugin: Send + Sync + 'static {
 
 ### `IoPlugin`
 
-Lê uma imagem do disco no `InputStage`, escreve os frames no `OutputStage` e os remove no `CleanupStage`.
+Lê uma imagem do disco em `Stage::Input`, escreve os frames em `Stage::Output` e os remove em `Stage::Cleanup`.
 
 | Campo | Tipo | Descrição |
 |---|---|---|

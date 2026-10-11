@@ -6,27 +6,27 @@ title: Pipeline e stages
 
 ## Ciclo de um tick
 
-`Pipeline::tick()` executa seis stages, sempre nesta ordem:
+`Pipeline::tick()` roda um único schedule em que cada stage é um `SystemSet`. Os seis sets são encadeados, sempre nesta ordem:
 
 ```mermaid
 flowchart LR
-    I[InputStage] --> P[PreProcessStage] --> C[ProcessStage] --> O[PostProcessStage] --> S[OutputStage] --> L[CleanupStage]
+    I[Input] --> P[PreProcess] --> C[Process] --> O[PostProcess] --> S[Output] --> L[Cleanup]
 ```
 
 | Stage | Uso |
 |---|---|
-| `InputStage` | fontes criam entidades `Frame` |
-| `PreProcessStage` | preparação (resize, normalização) |
-| `ProcessStage` | filtros e detecção |
-| `PostProcessStage` | agregação de resultados (NMS, tracking) |
-| `OutputStage` | escrita em disco, exibição |
-| `CleanupStage` | remoção das entidades que a saída já consumiu |
+| `Stage::Input` | fontes criam entidades `Frame` |
+| `Stage::PreProcess` | preparação (resize, normalização) |
+| `Stage::Process` | filtros e detecção |
+| `Stage::PostProcess` | agregação de resultados (NMS, tracking) |
+| `Stage::Output` | escrita em disco, exibição |
+| `Stage::Cleanup` | remoção das entidades que a saída já consumiu |
 
 `Pipeline::run()` repete ticks até `PipelineState::should_stop` ser `true`.
 
 ## Ciclo de vida dos frames
 
-Uma fonte cria um `Frame` por tick. Sem limpeza eles se acumulam no `World` e todo sistema passa a revisitá-los. `despawn_processed_frames_system`, registrado no `CleanupStage`, remove toda entidade com `Frame` depois que os sistemas de saída rodaram.
+Uma fonte cria um `Frame` por tick. Sem limpeza eles se acumulam no `World` e todo sistema passa a revisitá-los. `despawn_processed_frames_system`, registrado em `Stage::Cleanup`, remove toda entidade com `Frame` depois que os sistemas de saída rodaram.
 
 O `IoPlugin` já o registra. Para inspecionar os frames depois do tick (testes, depuração), use `keep_frames: true`. Um pipeline sem `IoPlugin` não remove nada por conta própria:
 
@@ -34,9 +34,7 @@ O `IoPlugin` já o registra. Para inspecionar os frames depois do tick (testes, 
 builder.add_cleanup_system(despawn_processed_frames_system);
 ```
 
-:::caution
-Com a limpeza ligada, o frame vive um único tick. Um sistema que depende de um componente inserido por outro sistema do **mesmo** stage (ver abaixo) nunca chega a vê-lo.
-:::
+Com a limpeza ligada o frame vive um único tick: tudo o que um sistema precisa ver tem de estar pronto antes de `Stage::Cleanup`, o que a [ordenação](#visibilidade-de-componentes) abaixo garante.
 
 ## Controle de parada
 
@@ -56,16 +54,22 @@ pipeline.run()?; // executa exatamente 3 ticks
 
 ## Visibilidade de componentes
 
-Componentes inseridos via `Commands` só são aplicados ao final do stage em que o sistema rodou. Consequências:
+`Commands` (inserir componente, criar ou remover entidade) são adiados até um **ponto de sincronização**. Há um entre cada par de stages consecutivos e um entre dois sistemas ordenados explicitamente.
 
-- um componente inserido no `ProcessStage` já é visível no `PostProcessStage` do **mesmo** tick;
-- dois sistemas no **mesmo** stage não veem as inserções um do outro até o tick seguinte.
+| Situação | O segundo sistema vê os `Commands` do primeiro? |
+|---|---|
+| stages diferentes, mesmo tick | sim |
+| mesmo stage, ordenados com `.chain()` / `.before()` / `.after()` | sim |
+| mesmo stage, sem ordem | não — só no tick seguinte, e a ordem de execução é indefinida |
 
-Por isso, com `FiltersPlugin::all()`, o `grayscale_system` marca o frame no tick 1 e o `sobel_system` — que exige `GrayscaleTag` e está no mesmo stage — só o processa no tick 2.
+```rust
+// O Sobel exige o `GrayscaleTag` que o grayscale insere via `Commands`.
+builder.add_system(Stage::Process, (grayscale_system, sobel_system).chain());
+```
 
-:::note
-Essa limitação é resolvida no milestone M2, que substitui os cinco schedules por um único schedule com ordenação explícita entre sistemas ([#39](https://github.com/Bappoz/perceptor/issues/39)).
-:::
+É o que `FiltersPlugin::all()` faz: grayscale e Sobel rodam no mesmo tick.
+
+Sistemas sem ordem entre si podem rodar em paralelo quando não disputam os mesmos dados. Ordene só o que depende de fato.
 
 ## Tratamento de erros
 

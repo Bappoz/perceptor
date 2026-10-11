@@ -30,7 +30,7 @@ fn reads_image_and_spawns_frame_entity() {
         .add_plugin(IoPlugin {
             input_path: input,
             output_path: output,
-            // Sem isto o frame é despawnado no `CleanupStage` do mesmo tick.
+            // Sem isto o frame é despawnado em `Stage::Cleanup` do mesmo tick.
             keep_frames: true,
             ..Default::default()
         })

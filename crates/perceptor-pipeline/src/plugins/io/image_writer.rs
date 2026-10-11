@@ -40,7 +40,7 @@ pub fn write_frame(frame: &Frame, path: &Path, format: ImageFormat) -> Result<()
 }
 
 /// Sistema ECS: salva todos os frames presentes no world no caminho configurado.
-/// Registrado no `OutputStage` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
+/// Registrado em `Stage::Output` pelo [`IoPlugin`](crate::plugins::io::IoPlugin).
 pub fn image_writer_system(
     query: Query<&Frame>,
     config: Res<IoConfig>,

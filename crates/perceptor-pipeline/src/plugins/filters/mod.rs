@@ -3,31 +3,35 @@
 //! # Sistemas disponíveis
 //! | Sistema            | Stage          | Descrição                        |
 //! |--------------------|----------------|----------------------------------|
-//! | `grayscale_system` | `ProcessStage`   | RGB → Luminância (BT.601)        |
-//! | `sobel_system`     | `ProcessStage`   | Detecção de bordas (Sobel 3×3)   |
+//! | `grayscale_system` | `Stage::Process` | RGB → Luminância (BT.601)        |
+//! | `sobel_system`     | `Stage::Process` | Detecção de bordas (Sobel 3×3)   |
+//!
+//! Com os dois habilitados o Sobel é ordenado depois do grayscale e roda no mesmo tick.
 //!
 //! # Adicionando filtros customizados
 //! Implemente uma função com assinatura de sistema ECS e registre-a:
 //! ```rust,ignore
-//! builder.add_process_system(my_filter_system);
+//! builder.add_system(Stage::Process, my_filter_system);
 //! ```
 
 pub mod grayscale;
 pub mod sobel;
 
-use crate::{pipeline::PipelineBuilder, plugin::Plugin};
+use bevy_ecs::schedule::IntoScheduleConfigs;
+
+use crate::{pipeline::PipelineBuilder, plugin::Plugin, schedule::Stage};
 use grayscale::grayscale_system;
 use sobel::sobel_system;
 
-/// Plugin que registra os filtros clássicos no `ProcessStage`.
+/// Plugin que registra os filtros clássicos em [`Stage::Process`].
 ///
 /// `Default` não habilita nenhum filtro (equivale a [`FiltersPlugin::none`]);
 /// use [`FiltersPlugin::all`] para habilitar grayscale e Sobel.
 #[derive(Debug, Default)]
 pub struct FiltersPlugin {
-    /// Registra `grayscale_system` no `ProcessStage`.
+    /// Registra `grayscale_system` em [`Stage::Process`].
     pub enable_grayscale: bool,
-    /// Registra `sobel_system` no `ProcessStage`.
+    /// Registra `sobel_system` em [`Stage::Process`].
     pub enable_sobel: bool,
 }
 
@@ -54,11 +58,14 @@ impl Plugin for FiltersPlugin {
     }
 
     fn build(&self, builder: &mut PipelineBuilder) {
-        if self.enable_grayscale {
-            builder.add_process_system(grayscale_system);
-        }
-        if self.enable_sobel {
-            builder.add_process_system(sobel_system);
-        }
+        match (self.enable_grayscale, self.enable_sobel) {
+            // Encadeados: o Sobel exige o `GrayscaleTag` que o grayscale insere via `Commands`.
+            (true, true) => {
+                builder.add_system(Stage::Process, (grayscale_system, sobel_system).chain())
+            }
+            (true, false) => builder.add_system(Stage::Process, grayscale_system),
+            (false, true) => builder.add_system(Stage::Process, sobel_system),
+            (false, false) => builder,
+        };
     }
 }

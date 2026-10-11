@@ -10,7 +10,7 @@ Orquestração ECS sobre `bevy_ecs`.
 
 | Item | Descrição |
 |---|---|
-| `Pipeline` | dono do `World` e dos schedules; `tick()`, `run()`, `world()`, `world_mut()` |
+| `Pipeline` | dono do `World` e do schedule; `tick()`, `run()`, `world()`, `world_mut()` |
 | `PipelineBuilder` | `add_plugin`, `add_*_system`, `with_max_ticks`, `build` |
 | `PipelineState` | recurso com `tick_count` e `should_stop` |
 | `Plugin` | trait de extensão |
@@ -28,7 +28,7 @@ Ambas ficam em `plugins::io` e podem ser usadas sem montar um pipeline.
 
 ## Stages
 
-`InputStage`, `PreProcessStage`, `ProcessStage`, `PostProcessStage`, `OutputStage`, `CleanupStage` — ver [Pipeline e stages](../conceitos/pipeline-e-stages.md).
+Enum `Stage` (um `SystemSet`): `Input`, `PreProcess`, `Process`, `PostProcess`, `Output`, `Cleanup`; `Stage::ALL` na ordem de execução. `PipelineBuilder::add_system(stage, sistemas)` — ver [Pipeline e stages](../conceitos/pipeline-e-stages.md).
 
 ## Componentes produzidos pelos filtros
 
