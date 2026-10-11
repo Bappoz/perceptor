@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M2 — Pipeline v2 (em andamento)
 
+- Contrato de `Plugin` cumprido: `PipelineBuilder::build()` passa a retornar `Result` e rejeita plugin duplicado ou dependência ausente (`Plugin::dependencies`); `Plugin::cleanup` recebe `&mut World` e é chamado em `Pipeline::shutdown()` ou no `Drop`, em ordem inversa de registro ([#41](https://github.com/Bappoz/perceptor/issues/41)).
 - Erros de sistemas deixam de ser engolidos: recurso `PipelineErrors`, adaptador `fallible` e `ErrorPolicy` (`FailFast`, `SkipFrame`, `Continue`). O padrão é `FailFast`, então `tick()`/`run()` agora retornam `Err` onde antes só havia um `warn!`; `image_reader_system` passa a retornar `Result` ([#40](https://github.com/Bappoz/perceptor/issues/40)).
 - Schedule único: `Stage` vira um `SystemSet` com seis variantes encadeadas e `add_system(Stage::X, …)`; grayscale e Sobel passam a rodar no mesmo tick. Os tipos `InputStage`…`CleanupStage` e `STAGE_ORDER` foram removidos ([#39](https://github.com/Bappoz/perceptor/issues/39)).
 - `CleanupStage` e `despawn_processed_frames_system`: o `IoPlugin` remove cada frame depois da saída; `keep_frames: true` mantém o comportamento anterior ([#12](https://github.com/Bappoz/perceptor/issues/12)).

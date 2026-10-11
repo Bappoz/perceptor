@@ -41,7 +41,7 @@ Com a limpeza ligada o frame vive um único tick: tudo o que um sistema precisa 
 ```rust
 use perceptor::prelude::*;
 
-let mut pipeline = Pipeline::builder().with_max_ticks(3).build();
+let mut pipeline = Pipeline::builder().with_max_ticks(3).build()?;
 pipeline.run()?; // executa exatamente 3 ticks
 ```
 

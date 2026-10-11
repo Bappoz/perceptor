@@ -48,7 +48,7 @@ fn build(policy: ErrorPolicy) -> Pipeline {
     let mut builder = Pipeline::builder().with_error_policy(policy);
     builder.add_system(Stage::Input, fallible(check_config_system));
     builder.add_system(Stage::Process, require_rgb_system);
-    let mut pipeline = builder.build();
+    let mut pipeline = builder.build().expect("sem plugins, `build` não falha");
     spawn_frames(&mut pipeline);
     pipeline
 }

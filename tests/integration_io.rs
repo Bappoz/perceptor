@@ -36,7 +36,8 @@ fn reads_image_and_spawns_frame_entity() {
             keep_frames: true,
             ..Default::default()
         })
-        .build();
+        .build()
+        .unwrap();
 
     pipeline.tick().unwrap();
 
@@ -62,7 +63,8 @@ fn invalid_input_path_makes_run_fail_in_fail_fast() {
             output_path: output.clone(),
             ..Default::default()
         })
-        .build();
+        .build()
+        .unwrap();
 
     let err = pipeline.run().unwrap_err();
 
@@ -85,7 +87,8 @@ fn invalid_input_path_is_recorded_without_failing_in_continue() {
             output_path: tmp.path().join("output_err.png"),
             ..Default::default()
         })
-        .build();
+        .build()
+        .unwrap();
 
     pipeline.run().unwrap();
 
@@ -112,7 +115,8 @@ fn unwritable_output_discards_the_frame_in_skip_frame() {
             keep_frames: true,
             ..Default::default()
         })
-        .build();
+        .build()
+        .unwrap();
 
     pipeline.tick().unwrap();
     pipeline.tick().unwrap();
@@ -140,7 +144,8 @@ fn unwritable_output_makes_tick_fail_in_fail_fast() {
             output_path: tmp.path().join("pasta_inexistente").join("out.png"),
             ..Default::default()
         })
-        .build();
+        .build()
+        .unwrap();
 
     assert!(matches!(pipeline.tick(), Err(Error::Encode { .. })));
 }
@@ -159,7 +164,8 @@ fn frames_are_despawned_after_output() {
             output_path: output.clone(),
             ..Default::default()
         })
-        .build();
+        .build()
+        .unwrap();
 
     for _ in 0..3 {
         pipeline.tick().unwrap();
@@ -185,7 +191,8 @@ fn keep_frames_accumulates_one_frame_per_tick() {
             keep_frames: true,
             ..Default::default()
         })
-        .build();
+        .build()
+        .unwrap();
 
     for _ in 0..3 {
         pipeline.tick().unwrap();

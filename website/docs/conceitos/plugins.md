@@ -9,17 +9,41 @@ Um plugin agrupa sistemas e recursos relacionados e os registra no builder.
 ```rust
 pub trait Plugin: Send + Sync + 'static {
     fn name(&self) -> &str;
+    fn dependencies(&self) -> &[&str] { &[] }
     fn build(&self, builder: &mut PipelineBuilder);
     fn finish(&self, _builder: &mut PipelineBuilder) {}
-    fn cleanup(&self, _builder: &mut PipelineBuilder) {}
+    fn cleanup(&self, _world: &mut World) {}
 }
 ```
 
-| Método | Quando é chamado |
+## Ciclo de vida
+
+| Método | Quando é chamado | Ordem |
+|---|---|---|
+| `build` | em `add_plugin`, para registrar sistemas | de registro |
+| `finish` | em `PipelineBuilder::build()`, depois da validação — é onde recursos são inseridos | de registro |
+| `cleanup` | em `Pipeline::shutdown()` ou no `Drop` do pipeline | inversa à de registro |
+
+`cleanup` roda uma única vez por plugin: chamar `shutdown()` de novo, ou deixar o pipeline sair de escopo depois, não o repete. Ele recebe o `World` ainda íntegro, então pode ler e remover os recursos que o plugin inseriu. A ordem inversa garante que um plugin seja encerrado antes daqueles registrados antes dele.
+
+## Validação
+
+`PipelineBuilder::build()` retorna `Result<Pipeline>` e falha antes de chamar qualquer `finish`:
+
+| Erro | Causa |
 |---|---|
-| `build` | em `add_plugin`, para registrar sistemas |
-| `finish` | em `build()`, depois que todos os plugins foram adicionados — é onde recursos são inseridos |
-| `cleanup` | ainda não é chamado pelo pipeline ([#41](https://github.com/Bappoz/perceptor/issues/41)) |
+| `Error::DuplicatePlugin { name }` | dois plugins com o mesmo `name()`; o segundo nem chega a passar por `build` |
+| `Error::MissingPluginDependency { plugin, dependency }` | um nome em `dependencies()` não corresponde a nenhum plugin registrado |
+
+```rust
+impl Plugin for OverlayPlugin {
+    fn name(&self) -> &str { "OverlayPlugin" }
+    fn dependencies(&self) -> &[&str] { &["FiltersPlugin"] }
+    // ...
+}
+```
+
+A ordem de registro não importa para as dependências: `add_plugin(Overlay).add_plugin(Filters)` é válido. O que se garante é que, quando `finish` roda, todos os plugins declarados já passaram por `build`. Um pipeline que falha na validação não chama `cleanup`.
 
 ## Plugins incluídos
 

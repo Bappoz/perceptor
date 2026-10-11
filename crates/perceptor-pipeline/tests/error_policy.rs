@@ -43,7 +43,7 @@ fn builder(policy: ErrorPolicy) -> PipelineBuilder {
 
 #[test]
 fn fail_fast_is_the_default_policy() {
-    let pipeline = Pipeline::builder().build();
+    let pipeline = Pipeline::builder().build().unwrap();
     assert_eq!(pipeline.errors().policy(), ErrorPolicy::FailFast);
 }
 
@@ -52,7 +52,7 @@ fn fail_fast_returns_the_error_and_skips_later_stages() {
     let mut builder = builder(ErrorPolicy::FailFast);
     builder.add_system(Stage::Input, fallible(always_fails));
     builder.add_system(Stage::Output, |mut seen: ResMut<Seen>| seen.0.push(99));
-    let mut pipeline = builder.build();
+    let mut pipeline = builder.build().unwrap();
 
     assert!(matches!(pipeline.tick(), Err(Error::NonContiguous)));
     assert!(
@@ -65,7 +65,7 @@ fn fail_fast_returns_the_error_and_skips_later_stages() {
 fn fail_fast_makes_run_return_the_error() {
     let mut builder = builder(ErrorPolicy::FailFast);
     builder.add_system(Stage::Process, fallible(always_fails));
-    let mut pipeline = builder.with_max_ticks(5).build();
+    let mut pipeline = builder.with_max_ticks(5).build().unwrap();
 
     assert!(matches!(pipeline.run(), Err(Error::NonContiguous)));
     assert_eq!(pipeline.errors().total(), 1, "para no primeiro tick");
@@ -76,7 +76,7 @@ fn continue_records_the_error_and_keeps_everything_running() {
     let mut builder = builder(ErrorPolicy::Continue);
     builder.add_system(Stage::Process, rejects_frame_one);
     builder.add_system(Stage::Output, record_frames);
-    let mut pipeline = builder.build();
+    let mut pipeline = builder.build().unwrap();
     pipeline.world_mut().spawn(frame(0));
     let failing = pipeline.world_mut().spawn(frame(1)).id();
 
@@ -95,7 +95,7 @@ fn skip_frame_discards_only_the_failing_frame_before_the_next_stage() {
     let mut builder = builder(ErrorPolicy::SkipFrame);
     builder.add_system(Stage::Process, rejects_frame_one);
     builder.add_system(Stage::PostProcess, record_frames);
-    let mut pipeline = builder.build();
+    let mut pipeline = builder.build().unwrap();
     pipeline.world_mut().spawn(frame(0));
     pipeline.world_mut().spawn(frame(1));
     pipeline.world_mut().spawn(frame(2));
@@ -113,7 +113,7 @@ fn skip_frame_keeps_the_pipeline_going_on_errors_without_a_frame() {
     let mut builder = builder(ErrorPolicy::SkipFrame);
     builder.add_system(Stage::Input, fallible(always_fails));
     builder.add_system(Stage::Output, |mut seen: ResMut<Seen>| seen.0.push(99));
-    let mut pipeline = builder.with_max_ticks(3).build();
+    let mut pipeline = builder.with_max_ticks(3).build().unwrap();
 
     pipeline.run().unwrap();
 
@@ -138,7 +138,7 @@ fn errors_hold_the_last_tick_and_total_counts_all_of_them() {
             Ok(())
         }),
     );
-    let mut pipeline = builder.build();
+    let mut pipeline = builder.build().unwrap();
 
     pipeline.tick().unwrap();
     pipeline.tick().unwrap();
@@ -153,7 +153,7 @@ fn errors_hold_the_last_tick_and_total_counts_all_of_them() {
 fn fallible_names_the_failing_system() {
     let mut builder = builder(ErrorPolicy::Continue);
     builder.add_system(Stage::Input, fallible(always_fails));
-    let mut pipeline = builder.build();
+    let mut pipeline = builder.build().unwrap();
 
     pipeline.tick().unwrap();
 

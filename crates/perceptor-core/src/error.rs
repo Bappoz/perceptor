@@ -128,6 +128,22 @@ pub enum Error {
         #[source]
         source: BoxError,
     },
+
+    /// Dois plugins com o mesmo nome foram registrados no pipeline.
+    #[error("plugin `{name}` registrado mais de uma vez")]
+    DuplicatePlugin {
+        /// Nome repetido.
+        name: String,
+    },
+
+    /// Um plugin declara depender de outro que não foi registrado.
+    #[error("plugin `{plugin}` depende de `{dependency}`, que não foi registrado")]
+    MissingPluginDependency {
+        /// Plugin que declarou a dependência.
+        plugin: String,
+        /// Nome do plugin ausente.
+        dependency: String,
+    },
 }
 
 impl Error {

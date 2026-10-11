@@ -7,7 +7,7 @@
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::Schedule;
 use bevy_ecs::system::ScheduleSystem;
-use perceptor_core::Result;
+use perceptor_core::{Error, Result};
 use tracing::{debug, info, warn};
 
 use crate::errors::{
@@ -25,6 +25,14 @@ pub struct Pipeline {
     world: World,
     schedule: Schedule,
     max_ticks: Option<u64>,
+    /// Plugins na ordem de registro; esvaziado por [`Pipeline::shutdown`].
+    plugins: Vec<Box<dyn Plugin>>,
+}
+
+impl Drop for Pipeline {
+    fn drop(&mut self) {
+        self.shutdown();
+    }
 }
 
 impl Pipeline {
@@ -89,6 +97,18 @@ impl Pipeline {
         Ok(())
     }
 
+    /// Encerra o pipeline: chama [`Plugin::cleanup`] de cada plugin, na ordem
+    /// inversa de registro.
+    ///
+    /// Roda uma única vez: chamadas seguintes e o `Drop` não repetem o
+    /// cleanup. O `World` continua acessível depois.
+    pub fn shutdown(&mut self) {
+        while let Some(plugin) = self.plugins.pop() {
+            debug!(plugin = plugin.name(), "plugin cleanup");
+            plugin.cleanup(&mut self.world);
+        }
+    }
+
     /// Erros reportados pelos sistemas no tick mais recente.
     ///
     /// # Panics
@@ -115,6 +135,8 @@ impl Pipeline {
 pub struct PipelineBuilder {
     world: World,
     plugins: Vec<Box<dyn Plugin>>,
+    /// Primeiro nome de plugin registrado em duplicata, reportado em `build`.
+    duplicate: Option<String>,
     schedule: Schedule,
     max_ticks: Option<u64>,
 }
@@ -146,6 +168,7 @@ impl Default for PipelineBuilder {
         Self {
             world,
             plugins: Vec::new(),
+            duplicate: None,
             schedule,
             max_ticks: None,
         }
@@ -175,9 +198,15 @@ impl PipelineBuilder {
     /// Registra um plugin no pipeline.
     ///
     /// O plugin receberá `&mut self` do builder e poderá adicionar sistemas.
-    /// Plugins duplicados (mesmo `name()`) são ignorados com aviso.
+    /// Um plugin com `name()` já registrado não é construído, e
+    /// [`build`](Self::build) falhará com [`Error::DuplicatePlugin`].
     #[must_use]
     pub fn add_plugin<P: Plugin>(mut self, plugin: P) -> Self {
+        if self.plugins.iter().any(|p| p.name() == plugin.name()) {
+            self.duplicate
+                .get_or_insert_with(|| plugin.name().to_owned());
+            return self;
+        }
         plugin.build(&mut self);
         self.plugins.push(Box::new(plugin));
         self
@@ -248,7 +277,31 @@ impl PipelineBuilder {
     }
 
     /// Constrói o [`Pipeline`] a partir da configuração atual.
-    pub fn build(mut self) -> Pipeline {
+    ///
+    /// Valida os plugins e só então chama [`Plugin::finish`] de cada um, na
+    /// ordem de registro.
+    ///
+    /// # Errors
+    /// - [`Error::DuplicatePlugin`] se dois plugins tiverem o mesmo nome.
+    /// - [`Error::MissingPluginDependency`] se um plugin declarar em
+    ///   [`Plugin::dependencies`] um nome que não foi registrado.
+    pub fn build(mut self) -> Result<Pipeline> {
+        if let Some(name) = self.duplicate.take() {
+            return Err(Error::DuplicatePlugin { name });
+        }
+        for plugin in &self.plugins {
+            let missing = plugin
+                .dependencies()
+                .iter()
+                .find(|dep| !self.plugins.iter().any(|p| p.name() == **dep));
+            if let Some(dependency) = missing {
+                return Err(Error::MissingPluginDependency {
+                    plugin: plugin.name().to_owned(),
+                    dependency: (*dependency).to_owned(),
+                });
+            }
+        }
+
         // Inicializa recurso de estado do pipeline
         self.world.insert_resource(PipelineState::default());
 
@@ -258,11 +311,12 @@ impl PipelineBuilder {
             plugin.finish(&mut self);
         }
 
-        Pipeline {
+        Ok(Pipeline {
             world: self.world,
             schedule: self.schedule,
             max_ticks: self.max_ticks,
-        }
+            plugins,
+        })
     }
 
     /// Acesso mutável ao `World` durante a construção (para plugins inserirem recursos).
@@ -306,7 +360,7 @@ mod tests {
 
     #[test]
     fn tick_count_increments_each_tick() {
-        let mut pipeline = Pipeline::builder().build();
+        let mut pipeline = Pipeline::builder().build().unwrap();
         assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 0);
         pipeline.tick().unwrap();
         assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 1);
@@ -316,7 +370,7 @@ mod tests {
 
     #[test]
     fn max_ticks_stops_pipeline_after_n_ticks() {
-        let mut pipeline = Pipeline::builder().with_max_ticks(3).build();
+        let mut pipeline = Pipeline::builder().with_max_ticks(3).build().unwrap();
         pipeline.run().unwrap();
         let state = pipeline.world().resource::<PipelineState>();
         assert_eq!(state.tick_count, 3);
@@ -342,7 +396,7 @@ mod tests {
         builder.add_cleanup_system(|mut seen: ResMut<Seen>| seen.0.push("cleanup"));
         builder.add_output_system(|mut seen: ResMut<Seen>| seen.0.push("output"));
         builder.add_input_system(|mut seen: ResMut<Seen>| seen.0.push("input"));
-        let mut pipeline = builder.build();
+        let mut pipeline = builder.build().unwrap();
 
         pipeline.tick().unwrap();
         assert_eq!(
@@ -366,7 +420,7 @@ mod tests {
         // Registrado duas vezes: dois plugins podem pedir a mesma limpeza.
         builder.add_cleanup_system(despawn_processed_frames_system);
         builder.add_cleanup_system(despawn_processed_frames_system);
-        let mut pipeline = builder.build();
+        let mut pipeline = builder.build().unwrap();
         pipeline.world_mut().spawn(test_frame());
         let other = pipeline.world_mut().spawn(Unrelated).id();
 
@@ -383,7 +437,7 @@ mod tests {
 
     #[test]
     fn frames_persist_without_a_cleanup_system() {
-        let mut pipeline = Pipeline::builder().build();
+        let mut pipeline = Pipeline::builder().build().unwrap();
         pipeline.world_mut().spawn(test_frame());
         pipeline.tick().unwrap();
         pipeline.tick().unwrap();
@@ -402,7 +456,7 @@ mod tests {
         builder.add_system(Stage::Process, |mut s: ResMut<Seen>| s.0.push("process"));
         builder.add_system(Stage::PreProcess, |mut s: ResMut<Seen>| s.0.push("pre"));
         builder.add_system(Stage::Input, |mut s: ResMut<Seen>| s.0.push("input"));
-        let mut pipeline = builder.build();
+        let mut pipeline = builder.build().unwrap();
 
         pipeline.tick().unwrap();
         assert_eq!(
@@ -430,7 +484,7 @@ mod tests {
                 }
             },
         );
-        let mut pipeline = builder.build();
+        let mut pipeline = builder.build().unwrap();
 
         pipeline.tick().unwrap();
         assert_eq!(pipeline.world().resource::<Seen>().0, ["pre saw it"]);
@@ -453,7 +507,7 @@ mod tests {
         let mut builder = Pipeline::builder();
         builder.world_mut().init_resource::<Seen>();
         builder.add_system(Stage::Process, (first, second).chain());
-        let mut pipeline = builder.build();
+        let mut pipeline = builder.build().unwrap();
 
         pipeline.tick().unwrap();
         assert_eq!(pipeline.world().resource::<Seen>().0, ["second saw it"]);
