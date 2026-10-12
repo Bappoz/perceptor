@@ -86,7 +86,7 @@ Conversões de cor, threshold, LUT, histograma, aritmética.
 - [x] #55 feat(imgproc): CLAHE
 - [x] #56 feat(imgproc): normalize e convert_scale entre profundidades
 - [x] #57 feat(imgproc): operações aritméticas e lógicas com máscara
-- [ ] #58 feat(imgproc): in_range e máscara por faixa de cor
+- [x] #58 feat(imgproc): in_range e máscara por faixa de cor
 
 ## M4 — Filtros espaciais
 

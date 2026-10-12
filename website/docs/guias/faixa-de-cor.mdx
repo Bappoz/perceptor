@@ -1,0 +1,66 @@
+---
+title: Faixa de cor
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/in_range.rs';
+
+# Máscara por faixa de cor
+
+Segmentar por cor é perguntar, pixel a pixel, se ele cai dentro de uma faixa. `in_range` responde com uma máscara `L8` — `255` onde sim, `0` onde não — que as demais operações aceitam como máscara ([aritmética](./aritmetica.mdx), [histograma](./histograma.mdx)). Fica em `perceptor::imgproc::range`.
+
+<CodeBlock language="rust" title="examples/in_range.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example in_range
+```
+
+## A função
+
+```rust
+in_range(view, lower, upper) -> Result<Image<L8>>
+```
+
+`lower` e `upper` são **pixels do mesmo formato** da imagem: `Rgb8::new(10, 20, 30)`, `Hsv8::new(170, 100, 50)`, `L16::new(1000)`. O pixel casa quando `lower ≤ valor ≤ upper` em **todos** os canais, com limites **inclusivos**. Serve a qualquer formato: `L8`, `L16`, `Rgb8`, `Hsv8`, `LF32`…
+
+## Por que HSV
+
+Em RGB, "vermelho" é uma região torta do cubo: depende dos três canais e muda com a luz. Em HSV a cor é o canal `H` sozinho, e a faixa vira uma caixa simples: matiz perto de `0`, saturação alta o bastante para não ser cinza, valor alto o bastante para não ser preto.
+
+| Cor | `H` (`Hsv8`, escala `0..180`) |
+|---|---|
+| vermelho | `170..=179` e `0..=10` |
+| amarelo | ≈ `20..=35` |
+| verde | ≈ `50..=70` |
+| azul | ≈ `100..=130` |
+
+Converta com [`rgb_to_hsv`](./cor-e-canais.mdx) e aplique `in_range` ao resultado.
+
+## O matiz dá a volta
+
+O matiz é um **ângulo**: depois de `179` vem `0`. O vermelho cruza esse ponto, então não cabe em uma faixa `lower ≤ h ≤ upper` comum. A regra:
+
+> Em formatos HSV/HSL, se `lower.h > upper.h`, a faixa atravessa o zero: casa `h ≥ lower.h` **ou** `h ≤ upper.h`.
+
+```rust
+// vermelho: 170..=179 e 0..=10
+in_range(hsv.view(), Hsv8::new(170, 100, 50), Hsv8::new(10, 255, 255))?
+```
+
+A volta vale **só para o matiz** (canal 0 de `Hsv8`, `Hsl8`, `HsvF32` e `HslF32`). Saturação, valor e os canais de qualquer outro formato com limite invertido dão uma faixa **vazia**: nenhum pixel casa. É deliberado — uma faixa invertida em um canal que não é circular quase sempre é um erro de quem chamou, e silenciosamente "dar a volta" esconderia isso. Em `HsvF32` o matiz está em graus (`0.0..360.0`), e o vermelho é `350.0` a `10.0`.
+
+O OpenCV não faz isso: `cv2.inRange` trata `lower.h > upper.h` como vazio, e o vermelho exige somar duas máscaras. Aqui a faixa é uma só.
+
+## Limites
+
+- Saída binária: não há "quase vermelho". Para uma pontuação contínua, calcule a distância no espaço de cor.
+- Uma única faixa por chamada. Várias cores (ou vermelho em RGB) são a união de máscaras, com [`bitwise_or`](./aritmetica.mdx).
+- Em `f32`, `NaN` em um canal nunca está na faixa.
+- A faixa é fixa: não se adapta à iluminação. Em cena com luz variável, aumente a margem de `V` e `S` ou normalize antes.
+
+## Verificado
+
+- Limites inclusivos e conjunção dos canais, à mão, em `Rgb8`, `L8`, `L16` e `LF32`.
+- A volta do matiz em `Hsv8` e `HsvF32`, nas duas pontas e no meio; faixa de matiz sem volta é um intervalo comum; a volta não vale para saturação.
+- Contra a definição ingênua, para limites e imagens aleatórios (proptest), em `Rgb8` e em `Hsv8` com volta.
+- **Golden com objetos sintéticos** (discos vermelho, verde, azul e amarelo sobre cinza): as máscaras de vermelho (com a volta) e de verde foram conferidas contra o `cv2.inRange` do OpenCV 5.0.0 — o vermelho como união de duas faixas — com **zero** pixels diferentes. A entrada, reconstruída em numpy, é idêntica.
