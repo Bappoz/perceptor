@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M3 — Cor e operações pontuais (em andamento)
 
+- `imgproc::hsv`: `rgb_to_hsv`, `hsv_to_rgb`, `rgb_to_hsl` e `hsl_to_rgb`, em 8 bits e em `f32`. Quatro formatos de pixel novos em `perceptor-core` — `Hsv8`, `Hsl8` (matiz em `0..180`), `HsvF32`, `HslF32` (matiz em graus) — aceitos também pelo `Frame`. A ida e volta em 8 bits erra até 4 níveis em HSV e 5 em HSL, medidos sobre todos os valores RGB ([#49](https://github.com/Bappoz/perceptor/issues/49)).
 - `imgproc::channels`: `rgb_to_bgr`/`bgr_to_rgb`, `add_alpha`/`drop_alpha`, `bgr_to_rgba`/`rgba_to_bgr`, `swap_channels` no lugar, `extract_channel`, `split_channels` e `merge_channels`, com round-trip exato e um golden por conversão. Novo erro `ChannelOutOfRange` ([#48](https://github.com/Bappoz/perceptor/issues/48)).
 - Escala de cinza em ponto fixo Q15 com arredondamento, pesos `LumaWeights::{Bt601, Bt709}` (`convert_to_gray_with`), versão de referência em `f64` e paralelismo por faixas de linhas só acima de 65 536 pixels. O resultado de `convert_to_gray` passa a ser arredondado em vez de truncado, então alguns pixels sobem um nível. Primeiro benchmark `criterion` do projeto ([#47](https://github.com/Bappoz/perceptor/issues/47)).
 

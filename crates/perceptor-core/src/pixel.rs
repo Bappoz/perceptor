@@ -75,6 +75,14 @@ pub enum PixelFormat {
     LF32,
     /// RGB, `f32` por canal.
     RgbF32,
+    /// HSV, 8 bits por canal: matiz em `0..180` (graus / 2).
+    Hsv8,
+    /// HSL, 8 bits por canal: matiz em `0..180` (graus / 2).
+    Hsl8,
+    /// HSV, `f32` por canal: matiz em graus, `0.0..360.0`.
+    HsvF32,
+    /// HSL, `f32` por canal: matiz em graus, `0.0..360.0`.
+    HslF32,
 }
 
 impl PixelFormat {
@@ -84,7 +92,13 @@ impl PixelFormat {
         match self {
             Self::L8 | Self::L16 | Self::LF32 => 1,
             Self::La8 => 2,
-            Self::Rgb8 | Self::Bgr8 | Self::RgbF32 => 3,
+            Self::Rgb8
+            | Self::Bgr8
+            | Self::RgbF32
+            | Self::Hsv8
+            | Self::Hsl8
+            | Self::HsvF32
+            | Self::HslF32 => 3,
             Self::Rgba8 => 4,
         }
     }
@@ -93,9 +107,15 @@ impl PixelFormat {
     #[must_use]
     pub const fn sample(self) -> SampleType {
         match self {
-            Self::L8 | Self::La8 | Self::Rgb8 | Self::Rgba8 | Self::Bgr8 => SampleType::U8,
+            Self::L8
+            | Self::La8
+            | Self::Rgb8
+            | Self::Rgba8
+            | Self::Bgr8
+            | Self::Hsv8
+            | Self::Hsl8 => SampleType::U8,
             Self::L16 => SampleType::U16,
-            Self::LF32 | Self::RgbF32 => SampleType::F32,
+            Self::LF32 | Self::RgbF32 | Self::HsvF32 | Self::HslF32 => SampleType::F32,
         }
     }
 
@@ -273,6 +293,68 @@ pixel_format!(
     RgbF32, f32, 3
 );
 
+pixel_format!(
+    /// HSV de 8 bits por canal. Memória: `[H, S, V]`.
+    ///
+    /// Matiz em `0..180` (graus divididos por 2, para caber em um byte);
+    /// saturação e valor em `0..=255`.
+    Hsv8, u8, 3
+);
+pixel_format!(
+    /// HSL de 8 bits por canal. Memória: `[H, S, L]`.
+    ///
+    /// Matiz em `0..180` (graus divididos por 2); saturação e luminosidade
+    /// em `0..=255`.
+    Hsl8, u8, 3
+);
+pixel_format!(
+    /// HSV em `f32` por canal. Memória: `[H, S, V]`.
+    ///
+    /// Matiz em graus, `0.0..360.0`; saturação e valor em `0.0..=1.0`.
+    HsvF32, f32, 3
+);
+pixel_format!(
+    /// HSL em `f32` por canal. Memória: `[H, S, L]`.
+    ///
+    /// Matiz em graus, `0.0..360.0`; saturação e luminosidade em `0.0..=1.0`.
+    HslF32, f32, 3
+);
+
+macro_rules! hue_accessors {
+    ($name:ident, $sub:ty, $third:ident, $third_doc:literal) => {
+        impl $name {
+            /// Cria um pixel a partir dos três canais, na ordem em memória.
+            #[must_use]
+            pub const fn new(h: $sub, s: $sub, $third: $sub) -> Self {
+                Self([h, s, $third])
+            }
+
+            /// Matiz, na escala do formato.
+            #[must_use]
+            pub const fn h(self) -> $sub {
+                self.0[0]
+            }
+
+            /// Saturação.
+            #[must_use]
+            pub const fn s(self) -> $sub {
+                self.0[1]
+            }
+
+            #[doc = $third_doc]
+            #[must_use]
+            pub const fn $third(self) -> $sub {
+                self.0[2]
+            }
+        }
+    };
+}
+
+hue_accessors!(Hsv8, u8, v, "Valor.");
+hue_accessors!(HsvF32, f32, v, "Valor.");
+hue_accessors!(Hsl8, u8, l, "Luminosidade.");
+hue_accessors!(HslF32, f32, l, "Luminosidade.");
+
 luma_accessors!(L8, u8);
 luma_accessors!(L16, u16);
 luma_accessors!(LF32, f32);
@@ -355,6 +437,10 @@ mod tests {
         assert_layout::<L16>();
         assert_layout::<LF32>();
         assert_layout::<RgbF32>();
+        assert_layout::<Hsv8>();
+        assert_layout::<Hsl8>();
+        assert_layout::<HsvF32>();
+        assert_layout::<HslF32>();
     }
 
     #[test]

@@ -11,7 +11,8 @@ use std::time::Duration;
 use bevy_ecs::prelude::Component;
 use image::DynamicImage;
 use perceptor_core::{
-    Bgr8, Error, Image, La8, Pixel, PixelFormat, Result, Rgb8, RgbF32, Rgba8, L16, L8, LF32,
+    Bgr8, Error, Hsl8, HslF32, Hsv8, HsvF32, Image, La8, Pixel, PixelFormat, Result, Rgb8, RgbF32,
+    Rgba8, L16, L8, LF32,
 };
 
 /// Metadados de um frame de vídeo/imagem.
@@ -70,6 +71,14 @@ pub enum FrameData {
     LF32(Image<LF32>),
     /// RGB, `f32` por canal.
     RgbF32(Image<RgbF32>),
+    /// HSV, 8 bits por canal.
+    Hsv8(Image<Hsv8>),
+    /// HSL, 8 bits por canal.
+    Hsl8(Image<Hsl8>),
+    /// HSV, `f32` por canal.
+    HsvF32(Image<HsvF32>),
+    /// HSL, `f32` por canal.
+    HslF32(Image<HslF32>),
 }
 
 /// Aplica a mesma expressão à imagem de qualquer variante.
@@ -84,6 +93,10 @@ macro_rules! for_any_format {
             FrameData::L16($image) => $body,
             FrameData::LF32($image) => $body,
             FrameData::RgbF32($image) => $body,
+            FrameData::Hsv8($image) => $body,
+            FrameData::Hsl8($image) => $body,
+            FrameData::HsvF32($image) => $body,
+            FrameData::HslF32($image) => $body,
         }
     };
 }
@@ -101,6 +114,10 @@ impl FrameData {
             Self::L16(_) => PixelFormat::L16,
             Self::LF32(_) => PixelFormat::LF32,
             Self::RgbF32(_) => PixelFormat::RgbF32,
+            Self::Hsv8(_) => PixelFormat::Hsv8,
+            Self::Hsl8(_) => PixelFormat::Hsl8,
+            Self::HsvF32(_) => PixelFormat::HsvF32,
+            Self::HslF32(_) => PixelFormat::HslF32,
         }
     }
 
@@ -209,7 +226,7 @@ macro_rules! frame_pixel {
     };
 }
 
-frame_pixel!(L8, La8, Rgb8, Rgba8, Bgr8, L16, LF32, RgbF32);
+frame_pixel!(L8, La8, Rgb8, Rgba8, Bgr8, L16, LF32, RgbF32, Hsv8, Hsl8, HsvF32, HslF32);
 
 /// Componente principal: uma imagem com metadados.
 ///

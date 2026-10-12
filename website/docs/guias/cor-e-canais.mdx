@@ -4,10 +4,11 @@ title: Cor e canais
 
 import CodeBlock from '@theme/CodeBlock';
 import Channels from '!!raw-loader!@site/../examples/channels.rs';
+import Hsv from '!!raw-loader!@site/../examples/hsv.rs';
 
 # Cor e canais
 
-Operações que mudam o **formato de pixel** de uma imagem. Esta página cobre as de layout — reordenar, acrescentar, remover, separar e juntar canais —, que só movem subpixels. As que fazem conta com os valores estão na referência: [escala de cinza](../referencia/perceptor-imgproc.md#grayscale).
+Operações que mudam o **formato de pixel** de uma imagem: as de [layout](#layout-de-canais), que só movem subpixels, e as de [espaço de cor](#hsv-e-hsl), que fazem conta com os valores. A [escala de cinza](../referencia/perceptor-imgproc.md#grayscale) está na referência.
 
 ## Layout de canais
 
@@ -68,3 +69,65 @@ let merged = merge_channels::<Bgr8>(&[b.view(), g.view(), r.view()])?;
 ### No pipeline
 
 As conversões com a assinatura `ImageView<A> -> Result<Image<B>>` entram direto em [`add_op`](./kernels-como-sistemas.mdx); as que têm parâmetro extra, por uma closure, como no fim do exemplo.
+
+## HSV e HSL
+
+RGB mistura cor e claridade nos três canais: o mesmo vermelho, ao sol e na sombra, muda os três valores. HSV e HSL separam o **matiz** (o ângulo na roda de cores) da claridade, e por isso "é vermelho" vira uma faixa de um canal só. Ficam em `perceptor::imgproc::hsv`.
+
+<CodeBlock language="rust" title="examples/hsv.rs">{Hsv}</CodeBlock>
+
+```bash
+cargo run --example hsv
+```
+
+| Função | 8 bits | `f32` |
+|---|---|---|
+| `rgb_to_hsv` | `Rgb8` → `Hsv8` | `RgbF32` → `HsvF32` |
+| `hsv_to_rgb` | `Hsv8` → `Rgb8` | `HsvF32` → `RgbF32` |
+| `rgb_to_hsl` | `Rgb8` → `Hsl8` | `RgbF32` → `HslF32` |
+| `hsl_to_rgb` | `Hsl8` → `Rgb8` | `HslF32` → `RgbF32` |
+
+O formato de saída sai do de entrada; não há turbofish.
+
+### Os dois modelos
+
+Com `max` e `min` sendo o maior e o menor dos três canais:
+
+| | HSV | HSL |
+|---|---|---|
+| Terceiro eixo | valor `V = max` | luminosidade `L = (max + min) / 2` |
+| Saturação | `(max − min) / max` | `(max − min) / (1 − |2L − 1|)` |
+| Cor pura (ex.: vermelho) | `S = 1, V = 1` | `S = 1, L = 0.5` |
+| Branco | `S = 0, V = 1` | `L = 1` (qualquer `S`) |
+
+O matiz é o mesmo nos dois. Em HSV, clarear uma cor em direção ao branco baixa a saturação; em HSL baixa só a distância de `L` a `0.5`, e a saturação continua máxima. Para segmentar por cor, HSV costuma bastar; HSL é mais natural quando se quer mexer na claridade sem mudar a cor.
+
+### Convenções de faixa
+
+| Formato | `H` | `S` e `V`/`L` |
+|---|---|---|
+| `Hsv8`, `Hsl8` | `0..180` — graus divididos por 2 | `0..=255` |
+| `HsvF32`, `HslF32` | `0.0..360.0` — graus | `0.0..=1.0` |
+
+Um byte não comporta 360 valores, então o matiz de 8 bits usa **meio grau por nível**: vermelho é `0`, verde `60`, azul `120`. É a convenção do OpenCV (`COLOR_RGB2HSV`), e limiares escritos para ele valem aqui. Com isso a resolução de matiz em 8 bits é de 2°.
+
+Casos de borda, iguais nos quatro formatos:
+
+- **Cinza não tem matiz**: resulta em `H = 0, S = 0`. Preto é `(0, 0, 0)`.
+- **Na volta, `S = 0` ignora o matiz**.
+- **Matiz fora da faixa dá a volta na roda**: `180` em `Hsv8` é vermelho de novo, `-120.0` em `HsvF32` é azul. A ida nunca produz `180` nem `360.0`.
+- As funções em `f32` **não saturam** a entrada: RGB fora de `0.0..=1.0` produz saída fora da faixa.
+
+### Precisão da ida e volta
+
+| Caminho | Erro máximo por canal | Constante |
+|---|---|---|
+| `RgbF32` → HSV ou HSL → `RgbF32` | `1e-5` | `F32_ROUND_TRIP_TOLERANCE` |
+| `Rgb8` → `Hsv8` → `Rgb8` | 4 níveis | `HSV8_ROUND_TRIP_TOLERANCE` |
+| `Rgb8` → `Hsl8` → `Rgb8` | 5 níveis | `HSL8_ROUND_TRIP_TOLERANCE` |
+
+Em 8 bits a perda é da representação, não da conta: 180 matizes × 256 saturações não cobrem todas as cores de um mesmo valor, e o erro cresce nas cores saturadas e escuras. Os dois limites de 8 bits são o **máximo medido** sobre os 2²⁴ valores RGB (um teste percorre todos e falha se o número mudar). Em HSL nem as primárias voltam exatas: `L = 0.5` é o nível `127.5`, que não existe, e o vermelho `(255, 0, 0)` volta `(255, 1, 1)`.
+
+Quem precisa de ida e volta fiel — editar matiz e reconverter — deve usar o caminho `f32`. O de 8 bits serve para o uso mais comum: converter uma vez e limiarizar.
+
+O sentido contrário, HSV → RGB → HSV, não é identidade em nenhum dos caminhos: toda cor com `S = 0` perde o matiz.
