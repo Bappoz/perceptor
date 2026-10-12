@@ -21,7 +21,7 @@ O projeto está na versão `0.1` e em desenvolvimento inicial. Hoje existem:
 | Pipeline | `Pipeline`, `PipelineBuilder`, seis stages ordenados, trait `Plugin` |
 | I/O | leitura de uma imagem do disco e escrita em PNG/JPEG (`IoPlugin`) |
 | Cor | escala de cinza BT.601/BT.709, RGB ↔ BGR ↔ RGBA, RGB ↔ HSV/HSL, YUV (I420, NV12, YUYV) → RGB, alpha, separação e junção de canais |
-| Operações pontuais | limiarização global (5 tipos), Otsu e limiarização adaptativa (média, gaussiana), tabelas de consulta (gamma, ganho/offset, inversão; 8 e 16 bits), histograma por canal com máscara e equalização |
+| Operações pontuais | limiarização global (5 tipos), Otsu e limiarização adaptativa (média, gaussiana), tabelas de consulta (gamma, ganho/offset, inversão; 8 e 16 bits), histograma por canal com máscara, equalização e CLAHE |
 | Filtros | Sobel 3×3 (`FiltersPlugin`) |
 | Erros | `perceptor_core::Error` tipado em kernels e I/O |
 | ML | apenas a estrutura do plugin; não há backend de inferência |

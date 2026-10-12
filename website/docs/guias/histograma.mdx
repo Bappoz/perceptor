@@ -4,6 +4,7 @@ title: Histograma e equalização
 
 import CodeBlock from '@theme/CodeBlock';
 import Example from '!!raw-loader!@site/../examples/histogram.rs';
+import ClaheExample from '!!raw-loader!@site/../examples/clahe.rs';
 
 # Histograma e equalização
 
@@ -62,7 +63,7 @@ Como `equalization_lut` devolve uma [`Lut`](./lut-e-gamma.mdx), a transformaçã
 ### Limites
 
 - **O histograma não fica perfeitamente plano.** Os níveis são discretos: um nível com muitos pixels não pode ser dividido, só movido. O que se obtém é uma CDF aproximadamente linear.
-- **Amplifica ruído** em regiões quase uniformes: uma faixa estreita de níveis, quase toda ruído, vira uma faixa larga. Equalização *adaptativa* com limite de contraste (CLAHE) é o remédio, e é um outro chunk.
+- **Amplifica ruído** em regiões quase uniformes: uma faixa estreita de níveis, quase toda ruído, vira uma faixa larga. A equalização *adaptativa* com limite de contraste ([CLAHE](#clahe)) é o remédio.
 - **Cor**: `equalize` é para um canal. Equalizar cada canal do RGB separadamente desloca as cores; o usual é equalizar só a luminância (o canal `V` do HSV, por exemplo) e recompor. Isso é uma composição de funções que já existem, mas não há teste nem exemplo dela aqui.
 - Só 8 bits. Histograma de `L16` precisa decidir o número de *bins* e não está nesta versão.
 
@@ -73,3 +74,43 @@ Como `equalization_lut` devolve uma [`Lut`](./lut-e-gamma.mdx), a transformaçã
 - A tabela é monotônica e vai de `0` a `255` em qualquer histograma de dois ou mais níveis (proptest).
 - Uma imagem com níveis entre 100 e 140 passa a usar `0..=255`.
 - `equalize` é, exatamente, `apply_lut` da tabela do próprio histograma; uma ROI com *stride* conta como a sua cópia.
+
+## CLAHE
+
+A equalização global usa **um** histograma para a imagem inteira. Em uma foto com céu claro e sombra escura, nenhuma curva única serve às duas regiões. O CLAHE (*Contrast Limited Adaptive Histogram Equalization*) calcula uma curva **por região**, com um limite que impede a amplificação de ruído.
+
+<CodeBlock language="rust" title="examples/clahe.rs">{ClaheExample}</CodeBlock>
+
+```bash
+cargo run --example clahe
+```
+
+`clahe(view, clip_limit, (colunas, linhas))`, só para `L8`. O algoritmo:
+
+1. A imagem é dividida em uma grade `colunas × linhas`.
+2. O histograma de cada tile é **cortado**: nenhum bin passa de `clip_limit · área / 256` (e no mínimo `1`). O excesso é redistribuído entre os 256 níveis — o quociente inteiro vai a todos, o resto um a um, em passos regulares.
+3. Cada histograma vira uma tabela: `lut[v] = 255 · cdf(v) / área`.
+4. Cada pixel é a **interpolação bilinear** das tabelas dos quatro tiles mais próximos, pela posição dele entre os centros dos tiles. Antes do primeiro centro e depois do último vale só o tile da ponta.
+
+### Parâmetros
+
+- **`clip_limit`**: a unidade é a mesma do OpenCV (`cv2.createCLAHE`). `1.0` limita todo bin à altura uniforme e deixa a imagem quase intacta; valores usuais ficam entre `2` e `4`; a partir de `256` nada é cortado (equalização adaptativa pura, que amplifica ruído em áreas planas).
+- **`tiles`**: `(8, 8)` é o padrão da prática. Tiles menores adaptam mais, mas cada um tem menos pixels e uma estatística mais ruidosa. A grade precisa caber na imagem: um eixo zero, ou com mais tiles que pixels, dá `InvalidParameter`.
+
+### Por que a interpolação importa
+
+Sem o passo 4, cada tile seria equalizado sozinho e a fronteira entre dois tiles viraria um **degrau**: o fim de um tile vai a `255` e o começo do vizinho a `0`. O teste de continuidade usa uma rampa suave (0 a 254) e mostra os dois lados: equalizar cada um dos quatro tiles separadamente dá um salto de mais de 200 níveis entre vizinhos, e o CLAHE com a mesma grade fica em até 12 (medido: 4).
+
+### Limites
+
+- **Grade que não divide a imagem.** As fronteiras dos tiles caem em `i · largura / colunas` (divisão inteira), e os tiles diferem em até um pixel. O OpenCV, nesse caso, preenche a imagem por reflexão até um múltiplo e calcula o corte sobre a área preenchida; os resultados **diferem** (medi diferenças de até 13 níveis em uma cena de 96×64 com grade 4×3). Com dimensões divisíveis, a diferença é de no máximo 1.
+- Ainda é uma operação local de *intensidade*: em imagem colorida, aplique-a só à luminância.
+- O custo é um histograma por tile mais, por pixel, quatro consultas e uma mistura; a imagem é percorrida duas vezes.
+
+### Verificado
+
+- **Contra o OpenCV 5.0.0**, em um ambiente Python isolado e fora do CI: 12 configurações (duas imagens, grades 4×4, 8×8 e 3×3, limites de 1 a 40, todas divisíveis) deram diferença máxima de **1 nível** por pixel, com média abaixo de `0,1`. A diferença de 1 vem do arredondamento dos pesos (Q16 aqui, ponto flutuante lá). O golden foi conferido por esse mesmo cálculo.
+- Parâmetros inválidos são rejeitados; qualquer grade válida, inclusive um pixel por tile e dimensões não divisíveis, roda e preserva o tamanho (proptest).
+- O limite de corte limita a inclinação da tabela de cada tile (teste sobre um histograma concentrado em dois níveis).
+- Um limite maior dá mais contraste em uma imagem estreita (100–120).
+- Sem corte (`clip_limit ≥ 256`), a tabela é a CDF reescalada, conferida à mão.

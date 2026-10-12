@@ -83,7 +83,7 @@ Conversões de cor, threshold, LUT, histograma, aritmética.
 - [x] #52 feat(imgproc): threshold adaptativo (média e gaussiano)
 - [x] #53 feat(imgproc): LUT, gamma e brilho/contraste
 - [x] #54 feat(imgproc): histograma e equalização
-- [ ] #55 feat(imgproc): CLAHE
+- [x] #55 feat(imgproc): CLAHE
 - [ ] #56 feat(imgproc): normalize e convert_scale entre profundidades
 - [ ] #57 feat(imgproc): operações aritméticas e lógicas com máscara
 - [ ] #58 feat(imgproc): in_range e máscara por faixa de cor
