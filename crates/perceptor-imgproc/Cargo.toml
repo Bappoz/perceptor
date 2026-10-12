@@ -11,5 +11,14 @@ repository.workspace = true
 perceptor-core.workspace = true
 rayon.workspace = true
 
+[dev-dependencies]
+criterion.workspace = true
+perceptor-testkit.workspace = true
+proptest.workspace = true
+
+[[bench]]
+name = "grayscale"
+harness = false
+
 [lints]
 workspace = true
