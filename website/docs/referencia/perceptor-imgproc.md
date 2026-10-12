@@ -107,6 +107,21 @@ pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) ->
 
 `ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
 
+## `convert`
+
+Guia: [Profundidade e normalização](../guias/profundidade-e-normalizacao.mdx).
+
+```rust
+pub fn convert_scale<P: Pixel, Q: Pixel>(input: ImageView<'_, P>, alpha: f64, beta: f64) -> Result<Image<Q>>
+pub fn convert_depth<P: Pixel, Q: Pixel>(input: ImageView<'_, P>) -> Result<Image<Q>>
+pub fn normalize_minmax<P: Pixel, Q: Pixel<Subpixel = f32>>(input: ImageView<'_, P>, lo: f32, hi: f32) -> Result<Image<Q>>
+pub fn channel_mean_std<P: Pixel>(input: ImageView<'_, P>) -> Vec<ChannelStats>
+pub fn normalize_mean_std<P: Pixel, Q: Pixel<Subpixel = f32>>(input: ImageView<'_, P>, mean: &[f32], std: &[f32]) -> Result<Image<Q>>
+pub struct ChannelStats { pub mean: f64, pub std: f64 }
+```
+
+`P::Subpixel` e `Q::Subpixel` são `u8`, `u16` ou `f32` (trait `Sample`). Origem e destino têm o mesmo número de canais. Erros: `ChannelMismatch` (canais de origem/destino diferentes; `mean`/`std` com tamanho errado), `InvalidParameter` (`std` não positivo ou não finito, `mean` ou limites não finitos) e `Allocation`.
+
 ## `clahe`
 
 Guia: [CLAHE](../guias/histograma.mdx#clahe).

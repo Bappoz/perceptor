@@ -1,0 +1,82 @@
+---
+title: Profundidade e normalização
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/convert.rs';
+
+# Profundidade e normalização
+
+Uma imagem decodificada é feita de bytes (`0..=255`); uma rede neural quer `f32`, quase sempre em `[0, 1]` e centrado em zero. `perceptor::imgproc::convert` faz essa ponte, e o contrário.
+
+<CodeBlock language="rust" title="examples/convert.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example convert
+```
+
+## Profundidades
+
+| Formato | Subpixel | Branco nominal |
+|---|---|---|
+| `L8`, `Rgb8`, `Rgba8`, … | `u8` | `255` |
+| `L16` | `u16` | `65535` |
+| `LF32`, `RgbF32`, … | `f32` | `1.0` |
+
+Origem e destino precisam ter o **mesmo número de canais** (`L8` → `LF32`, `Rgb8` → `RgbF32`); caso contrário, `ChannelMismatch`. A conversão é canal a canal e não reordena nada.
+
+## `convert_scale` e `convert_depth`
+
+São duas perguntas diferentes:
+
+- `convert_scale(view, α, β)` calcula `α · v + β` sobre o valor **numérico** — o equivalente do `convertTo` do OpenCV. `u8` `100` com `α = 1` vira `f32` `100.0`.
+- `convert_depth(view)` mapeia o branco de uma profundidade no branco da outra, para **não mudar o brilho**: `u8` `255` → `f32` `1.0` → `u16` `65535`.
+
+O formato de destino se escolhe pelo tipo (`let out: Image<LF32> = convert_depth(view)?`).
+
+### Arredondamento e saturação
+
+Para destino inteiro, o resultado é arredondado para o mais próximo (**metade para longe de zero**: `0,5` → `1`, `2,5` → `3`) e **saturado** em `[0, máx]`. `NaN` vira `0`. Não há overflow possível: as conversões de `f64` para inteiro saturam. Para destino `f32` não há corte, então `α · v + β` pode sair de `[0, 1]`.
+
+| Conversão | Propriedade (testada) |
+|---|---|
+| `u8` → `f32` → `u8` | **exata**, nos 256 níveis e em `Rgb8` aleatório |
+| `u8` → `u16` → `u8` | **exata**; `v` vira `257 · v` |
+| `u16` → `f32` → `u16` | erra no máximo 1 nível (o `f32` tem 24 bits de mantissa) |
+| `f32` fora de `[0, 1]` → `u8` | satura em `0` ou `255` |
+
+## Normalização
+
+As funções abaixo trabalham em **tons nominais** — o valor dividido pelo branco da origem. `mean = 0.5` é "cinza médio" qualquer que seja a profundidade, e os números publicados das redes valem sem conta.
+
+| Função | Fórmula | Detalhe |
+|---|---|---|
+| `normalize_minmax(view, lo, hi)` | `lo + (v − mín) · (hi − lo) / (máx − mín)` | `mín`/`máx` de **todos** os canais juntos |
+| `normalize_mean_std(view, mean, std)` | `(v − mean[c]) / std[c]` | um `mean` e um `std` por canal |
+| `channel_mean_std(view)` | média e desvio populacional de cada canal | devolve `Vec<ChannelStats>` |
+
+### Min-max
+
+Esticar cada canal sozinho deslocaria as cores (um canal com pouca variação seria amplificado até o fundo da escala). Por isso o intervalo é o **global**: o equilíbrio entre os canais fica como estava. Uma imagem sem variação (`máx = mín`) vira toda `lo`, em vez de dividir por zero.
+
+### Média e desvio
+
+Dois usos:
+
+- **Com os números do modelo.** Para uma rede treinada na ImageNet: `mean = [0.485, 0.456, 0.406]`, `std = [0.229, 0.224, 0.225]`. É o que o `Normalize` do torchvision faz depois de `ToTensor`.
+- **Com as da própria imagem.** `channel_mean_std` e depois `normalize_mean_std` com o que ele devolveu: cada canal sai com média `0` e desvio `1`. O desvio é o **populacional** (divide por `N`). Um canal constante tem desvio `0` e **não pode** ser padronizado — `normalize_mean_std` rejeita `std ≤ 0` com `InvalidParameter`; escolha um piso (o exemplo usa `1e-6`).
+
+## Limites
+
+- Só conversões entre os três tipos de subpixel. Não há `i16`, `i32` nem `f64`.
+- A conversão é por **valor**, não por semântica: `Rgb8` → `HsvF32` passa pela verificação de canais (3 e 3), mas divide o matiz pelo branco `255`, que não é a escala dele. Para HSV use `imgproc::hsv`.
+- A estatística usa dois passes sobre a imagem; para um vídeo, calcule por quadro apenas se isso for o desejado — a normalização de uma rede costuma usar constantes, não estatísticas do quadro.
+- Nenhuma função reordena `HWC` → `CHW`; o layout do tensor é decisão de quem o consome.
+
+## Verificado
+
+- Ida e volta `u8` ↔ `f32` ↔ `u8` e `u8` ↔ `u16` ↔ `u8` exatas; `u16` → `u8` arredonda corretamente na fronteira (`32767` → `127`, `32768` → `128`).
+- `convert_scale` confere com `round(α·v + β)` saturado, para `α`, `β` e entradas `f32` de qualquer magnitude (proptest), e `NaN` vira `0`.
+- Min-max, média e desvio conferem com valores calculados à mão, inclusive o intervalo global entre canais e a imagem constante.
+- Padronizar pelas próprias estatísticas dá média `0` e desvio `1` (proptest, tolerância `1e-3`).
+- Uma ROI com *stride* converte como a sua cópia.
