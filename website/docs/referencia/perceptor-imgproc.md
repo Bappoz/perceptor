@@ -107,6 +107,23 @@ pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) ->
 
 `ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
 
+## `arith`
+
+Guia: [Aritmética e lógica](../guias/aritmetica.mdx).
+
+```rust
+pub fn add<P: Pixel>(a: ImageView<'_, P>, b: ImageView<'_, P>, mask: Option<ImageView<'_, L8>>) -> Result<Image<P>>
+pub fn sub<P: Pixel>(a: ImageView<'_, P>, b: ImageView<'_, P>, mask: Option<ImageView<'_, L8>>) -> Result<Image<P>>
+pub fn absdiff<P: Pixel>(a: ImageView<'_, P>, b: ImageView<'_, P>, mask: Option<ImageView<'_, L8>>) -> Result<Image<P>>
+pub fn add_weighted<P: Pixel>(a: ImageView<'_, P>, alpha: f64, b: ImageView<'_, P>, beta: f64, gamma: f64, mask: Option<ImageView<'_, L8>>) -> Result<Image<P>>
+pub fn bitwise_and<P: Pixel>(a: ImageView<'_, P>, b: ImageView<'_, P>, mask: Option<ImageView<'_, L8>>) -> Result<Image<P>>
+pub fn bitwise_or<P: Pixel>(/* idem */) -> Result<Image<P>>
+pub fn bitwise_xor<P: Pixel>(/* idem */) -> Result<Image<P>>
+pub fn bitwise_not<P: Pixel>(a: ImageView<'_, P>, mask: Option<ImageView<'_, L8>>) -> Result<Image<P>>
+```
+
+`P::Subpixel` é `u8`, `u16` ou `f32` (trait `Arith`); as funções `bitwise_*` exigem `u8` ou `u16` (trait `Bits`). Máscara: liga onde `≠ 0`; fora dela, a saída é o primeiro operando. Erros: `ShapeMismatch` (operando ou máscara de outras dimensões) e `Allocation`.
+
 ## `convert`
 
 Guia: [Profundidade e normalização](../guias/profundidade-e-normalizacao.mdx).

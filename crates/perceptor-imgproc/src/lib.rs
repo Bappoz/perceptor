@@ -7,6 +7,7 @@
 //! integração com o pipeline fica em `perceptor-pipeline`.
 
 pub mod adaptive;
+pub mod arith;
 pub mod channels;
 pub mod clahe;
 pub mod convert;
