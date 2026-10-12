@@ -74,6 +74,25 @@ pub fn merge_channels<P: Planar>(planes: &[ImageView<'_, P::Plane>]) -> Result<I
 
 Índices de canal seguem a ordem em memória. Só `swap_channels` opera no lugar.
 
+## `hsv`
+
+Guia: [HSV e HSL](../guias/cor-e-canais.mdx#hsv-e-hsl).
+
+```rust
+pub fn rgb_to_hsv<P: RgbColor>(input: ImageView<'_, P>) -> Result<Image<P::Hsv>>
+pub fn hsv_to_rgb<P: HsvColor>(input: ImageView<'_, P>) -> Result<Image<P::Rgb>>
+pub fn rgb_to_hsl<P: RgbColor>(input: ImageView<'_, P>) -> Result<Image<P::Hsl>>
+pub fn hsl_to_rgb<P: HslColor>(input: ImageView<'_, P>) -> Result<Image<P::Rgb>>
+```
+
+| Trait | Implementada por | Tipos associados |
+|---|---|---|
+| `RgbColor` | `Rgb8`, `RgbF32` | `Hsv`: `Hsv8`, `HsvF32`; `Hsl`: `Hsl8`, `HslF32` |
+| `HsvColor` | `Hsv8`, `HsvF32` | `Rgb` |
+| `HslColor` | `Hsl8`, `HslF32` | `Rgb` |
+
+Matiz em `0..180` (graus / 2) nos formatos de 8 bits e em `0.0..360.0` nos de `f32`. Constantes `HSV8_ROUND_TRIP_TOLERANCE` (4), `HSL8_ROUND_TRIP_TOLERANCE` (5) e `F32_ROUND_TRIP_TOLERANCE` (`1e-5`): erro máximo por canal na ida e volta a partir de RGB. Erro em runtime: só `Allocation`.
+
 ## `sobel`
 
 ```rust

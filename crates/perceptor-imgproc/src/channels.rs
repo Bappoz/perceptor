@@ -18,6 +18,7 @@
 //! Índices de canal seguem a **ordem em memória** do formato: em `Bgr8` o
 //! canal `0` é o azul.
 
+use crate::map_pixels;
 use perceptor_core::{
     Bgr8, Error, Image, ImageView, ImageViewMut, La8, Pixel, Result, Rgb8, RgbF32, Rgba8, L8, LF32,
 };
@@ -87,17 +88,6 @@ macro_rules! planar {
 }
 
 planar!(La8 => L8, Rgb8 => L8, Bgr8 => L8, Rgba8 => L8, RgbF32 => LF32);
-
-/// Aplica `f` a cada pixel de `input`, em uma imagem nova.
-fn map_pixels<A: Pixel, B: Pixel>(input: ImageView<'_, A>, f: impl Fn(A) -> B) -> Result<Image<B>> {
-    let mut output = Image::<B>::new(input.width(), input.height())?;
-    for (dst, src) in output.rows_mut().zip(input.rows()) {
-        for (out, pixel) in dst.iter_mut().zip(src) {
-            *out = f(*pixel);
-        }
-    }
-    Ok(output)
-}
 
 fn check_channel<P: Pixel>(index: usize) -> Result<()> {
     if index < P::CHANNELS {

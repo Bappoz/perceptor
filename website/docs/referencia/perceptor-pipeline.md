@@ -26,7 +26,7 @@ Orquestração ECS sobre `bevy_ecs`.
 | `testing::TestPipeline` | harness de teste: `with_systems`, `with_plugin`, `spawn`, `tick`, `assert_has*`, `assert_lacks*` — ver [Testando sistemas e plugins](../guias/testes.md#testando-sistemas-e-plugins) |
 | `Plugin` | trait de extensão: `name`, `dependencies`, `build`, `finish`, `cleanup` |
 | `Frame` | componente com `meta: FrameMeta` e `data: FrameData`; `as_image::<P>()`, `as_image_mut::<P>()`, `format()`, `width()`, `height()`, `channels()` |
-| `FrameData` | enum com uma `Image<P>` por formato de pixel; `From<Image<P>>`, `as_image`, `into_image`, `as_bytes` |
+| `FrameData` | enum com uma `Image<P>` por formato de pixel (inclusive `Hsv8`, `Hsl8`, `HsvF32`, `HslF32`); `From<Image<P>>`, `as_image`, `into_image`, `as_bytes` |
 | `FrameMeta` | `index`, `timestamp: Duration`, `source: Arc<str>`; `FrameMeta::new(index, source)` |
 
 ## Funções de I/O

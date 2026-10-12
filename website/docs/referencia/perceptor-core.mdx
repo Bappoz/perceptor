@@ -60,6 +60,12 @@ O formato faz parte do tipo: uma função que recebe `&[Rgb8]` não precisa chec
 | `L16` | `u16` | 1 | `L` |
 | `LF32` | `f32` | 1 | `L` |
 | `RgbF32` | `f32` | 3 | `R, G, B` |
+| `Hsv8` | `u8` | 3 | `H, S, V` |
+| `Hsl8` | `u8` | 3 | `H, S, L` |
+| `HsvF32` | `f32` | 3 | `H, S, V` |
+| `HslF32` | `f32` | 3 | `H, S, L` |
+
+Nos formatos com matiz o canal `H` tem escala própria: `0..180` em 8 bits (graus divididos por 2) e `0.0..360.0` em `f32`; ver [Cor e canais](../guias/cor-e-canais.mdx#hsv-e-hsl). Eles não têm equivalente em arquivo: `write_frame` devolve `UnsupportedFormat`.
 
 Cada tipo é um wrapper `#[repr(transparent)]` sobre um array de subpixels, então `&[Rgb8]` e `&[u8]` descrevem a mesma memória. O trait `Pixel` expõe as conversões:
 
