@@ -55,6 +55,7 @@ cargo run --example custom_plugin
 | Pipeline | `Pipeline`, `PipelineBuilder`, six ordered stages, `Plugin` trait |
 | I/O | read one image from disk, write PNG/JPEG (`read_frame`, `write_frame`, `IoPlugin`) |
 | Color | BT.601/BT.709 grayscale, RGB ↔ BGR ↔ RGBA, RGB ↔ HSV/HSL (8-bit and f32), YUV (I420, NV12, YUYV) → RGB, alpha, channel split/merge |
+| Point ops | global threshold (5 types), Otsu |
 | Filters | 3×3 Sobel magnitude |
 | Errors | typed `perceptor_core::Error` across kernels and I/O |
 
