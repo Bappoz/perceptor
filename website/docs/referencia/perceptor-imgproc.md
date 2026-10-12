@@ -49,6 +49,31 @@ A entrada é uma visão: aceita uma imagem inteira (`image.view()`) ou um recort
 
 O formato faz parte do tipo, então entrada com formato errado é erro de compilação. O único erro em runtime é `Allocation`, se a saída não puder ser alocada.
 
+## `channels`
+
+Conversões de layout de canais; nenhuma faz conta com os valores. Guia: [Cor e canais](../guias/cor-e-canais.mdx).
+
+```rust
+pub fn rgb_to_bgr(input: ImageView<'_, Rgb8>) -> Result<Image<Bgr8>>
+pub fn bgr_to_rgb(input: ImageView<'_, Bgr8>) -> Result<Image<Rgb8>>
+pub fn add_alpha<P: Opaque>(input: ImageView<'_, P>, alpha: u8) -> Result<Image<P::WithAlpha>>
+pub fn drop_alpha<P: Alpha>(input: ImageView<'_, P>) -> Result<Image<P::Opaque>>
+pub fn bgr_to_rgba(input: ImageView<'_, Bgr8>, alpha: u8) -> Result<Image<Rgba8>>
+pub fn rgba_to_bgr(input: ImageView<'_, Rgba8>) -> Result<Image<Bgr8>>
+pub fn swap_channels<P: Pixel>(image: ImageViewMut<'_, P>, a: usize, b: usize) -> Result<()>
+pub fn extract_channel<P: Planar>(input: ImageView<'_, P>, index: usize) -> Result<Image<P::Plane>>
+pub fn split_channels<P: Planar>(input: ImageView<'_, P>) -> Result<Vec<Image<P::Plane>>>
+pub fn merge_channels<P: Planar>(planes: &[ImageView<'_, P::Plane>]) -> Result<Image<P>>
+```
+
+| Trait | Implementada por | Tipo associado |
+|---|---|---|
+| `Opaque` | `Rgb8`, `L8` | `WithAlpha`: `Rgba8`, `La8` |
+| `Alpha` | `Rgba8`, `La8` | `Opaque`: `Rgb8`, `L8` |
+| `Planar` | `La8`, `Rgb8`, `Bgr8`, `Rgba8`, `RgbF32` | `Plane`: `L8` (`LF32` para `RgbF32`) |
+
+Índices de canal seguem a ordem em memória. Só `swap_channels` opera no lugar.
+
 ## `sobel`
 
 ```rust

@@ -1,0 +1,70 @@
+---
+title: Cor e canais
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Channels from '!!raw-loader!@site/../examples/channels.rs';
+
+# Cor e canais
+
+Operações que mudam o **formato de pixel** de uma imagem. Esta página cobre as de layout — reordenar, acrescentar, remover, separar e juntar canais —, que só movem subpixels. As que fazem conta com os valores estão na referência: [escala de cinza](../referencia/perceptor-imgproc.md#grayscale).
+
+## Layout de canais
+
+Todas ficam em `perceptor::imgproc::channels`.
+
+<CodeBlock language="rust" title="examples/channels.rs">{Channels}</CodeBlock>
+
+```bash
+cargo run --example channels
+```
+
+| Função | Entrada → saída | Aloca? |
+|---|---|---|
+| `rgb_to_bgr`, `bgr_to_rgb` | `Rgb8` ↔ `Bgr8` | sim |
+| `add_alpha(view, alpha)` | `Rgb8` → `Rgba8`, `L8` → `La8` | sim |
+| `drop_alpha(view)` | `Rgba8` → `Rgb8`, `La8` → `L8` | sim |
+| `bgr_to_rgba(view, alpha)`, `rgba_to_bgr(view)` | `Bgr8` ↔ `Rgba8` | sim |
+| `swap_channels(view_mut, a, b)` | qualquer formato, no lugar | não |
+| `extract_channel(view, i)` | multicanal → um plano | sim |
+| `split_channels(view)` | multicanal → `Vec` com um plano por canal | sim |
+| `merge_channels::<P>(&planos)` | planos → multicanal | sim |
+
+Como nenhuma delas calcula nada, toda conversão seguida da inversa devolve a imagem original bit a bit; os testes de propriedade verificam cada par.
+
+### Cor × ordem em memória
+
+`Rgb8` e `Bgr8` guardam os mesmos três valores em ordens diferentes, e os acessores `r()`, `g()`, `b()` escondem a diferença. `rgb_to_bgr` preserva a **cor**: o pixel continua com o mesmo `r()`, mas o primeiro byte passa a ser o azul.
+
+Já os **índices de canal** — em `swap_channels`, `extract_channel`, `split_channels` e `merge_channels` — seguem a ordem em memória. Em `Bgr8` o canal `0` é o azul.
+
+### No lugar
+
+`swap_channels` troca dois canais de cada pixel dentro do próprio buffer. O tipo não muda: depois de `swap_channels(rgb.view_mut(), 0, 2)` os bytes estão em ordem BGR, mas a imagem continua sendo `Image<Rgb8>`. Isso serve para **corrigir** um buffer cuja ordem real não é a do tipo — um decodificador que entregou BGR em um buffer que você tipou como `Rgb8` — e funciona sobre um recorte, alterando só ele.
+
+Para obter uma imagem tipada como `Bgr8`, use `rgb_to_bgr`, que aloca. Não há hoje como retipar uma `Image<Rgb8>` para `Image<Bgr8>` sem cópia: as conversões que mudam o número de canais (alpha, planos) mudam o tamanho do pixel e não têm versão no lugar em nenhum caso.
+
+### Alpha
+
+`add_alpha` preenche o canal novo com um valor constante. `drop_alpha` **descarta** o alpha sem aplicá-lo: um pixel totalmente transparente mantém a cor que tinha. Compor sobre um fundo é outra operação, ainda não disponível.
+
+### Planos
+
+`split_channels` devolve um `Image<L8>` por canal (`Image<LF32>` para `RgbF32`). `merge_channels` precisa do formato de saída no turbofish, porque três planos `L8` tanto podem ser `Rgb8` quanto `Bgr8`:
+
+```rust
+let merged = merge_channels::<Bgr8>(&[b.view(), g.view(), r.view()])?;
+```
+
+### Erros
+
+| Erro | Quando |
+|---|---|
+| `ChannelOutOfRange { index, channels }` | índice de canal maior que o formato comporta; em `swap_channels` a imagem não é alterada |
+| `ChannelMismatch { expected, actual }` | `merge_channels` com número de planos diferente dos canais do formato |
+| `ShapeMismatch { expected, actual }` | `merge_channels` com planos de dimensões diferentes |
+| `Allocation` | a saída não pôde ser alocada |
+
+### No pipeline
+
+As conversões com a assinatura `ImageView<A> -> Result<Image<B>>` entram direto em [`add_op`](./kernels-como-sistemas.mdx); as que têm parâmetro extra, por uma closure, como no fim do exemplo.
