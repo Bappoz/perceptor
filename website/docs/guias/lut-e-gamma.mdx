@@ -1,0 +1,82 @@
+---
+title: Tabelas de consulta
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/lut.rs';
+
+# Tabelas de consulta, gamma e brilho/contraste
+
+Uma **LUT** (*look-up table*) é uma função de um canal, calculada de antemão: `saída = tabela[entrada]`. Toda transformação que depende apenas do valor do próprio pixel — gamma, brilho, contraste, negativo, curva de tons — cabe em uma. Em 8 bits são 256 avaliações da função, uma vez; depois, cada amostra custa um acesso à tabela, seja a função cara ou barata.
+
+As funções ficam em `perceptor::imgproc::lut`.
+
+<CodeBlock language="rust" title="examples/lut.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example lut
+```
+
+## A tabela
+
+`Lut<T>` guarda uma entrada por nível: `Lut<u8>` tem 256, `Lut<u16>` tem 65 536 (128 KiB). Não existe `Lut<f32>` — não há um conjunto finito de níveis para indexar.
+
+| Construtor | `saída`, com `m` o nível máximo |
+|---|---|
+| `Lut::identity()` | `v` |
+| `Lut::invert()` | `m − v` |
+| `Lut::gamma(γ)` | `m · (v / m)^γ` |
+| `Lut::gain_offset(α, β)` | `α · v + β` |
+| `Lut::from_fn(f)` | o que `f` devolver para cada nível |
+
+`from_fn` é a saída de emergência: qualquer curva (sigmoide, *solarize*, posterização) vira uma tabela com uma closure.
+
+## Aplicar
+
+| Função | Faz |
+|---|---|
+| `apply_lut(view, &lut)` | imagem nova; a **mesma** tabela em todos os canais |
+| `apply_lut_in_place(view_mut, &lut)` | no lugar, sem alocar; é a que entra em [`add_op`](./kernels-como-sistemas.mdx) |
+| `apply_lut_per_channel(view, &[lut; N])` | uma tabela por canal; `N` tem de ser o número de canais |
+
+Funcionam sobre qualquer formato cujo subpixel seja `u8` ou `u16` (`L8`, `Rgb8`, `Bgr8`, `Rgba8`, `L16`, …) e aceitam visões com *stride*, como uma ROI.
+
+**Cuidado com o alfa.** `apply_lut` passa *todos* os canais pela tabela, o canal alfa de um `Rgba8` incluído — um gamma em um PNG com transparência mexe na transparência. Para preservá-lo, use `apply_lut_per_channel` com `Lut::identity()` na posição do alfa.
+
+## Gamma
+
+`Lut::gamma(γ)` é a potência direta sobre o valor normalizado:
+
+```text
+saída = m · (v / m)^γ
+```
+
+- `γ = 1`: identidade.
+- `γ < 1`: clareia os tons médios (`γ = 0,5` tira a raiz: 64 vira 128).
+- `γ > 1`: escurece os tons médios (`γ = 2` eleva ao quadrado: 128 vira 64).
+- `0` e `m` ficam onde estão, qualquer que seja `γ > 0`, e a curva é monotônica: gamma nunca troca a ordem de dois tons.
+
+A convenção é a de `skimage.exposure.adjust_gamma`. Outras bibliotecas e a literatura de vídeo usam `saída = v^(1/g)` para "corrigir um gamma de tela `g`"; para isso, passe `γ = 1 / g`.
+
+## Ganho e offset
+
+`Lut::gain_offset(α, β)` é a reta `α · v + β`, o par clássico de **contraste** (`α`) e **brilho** (`β`):
+
+- `α > 1` aumenta o contraste, `0 < α < 1` o reduz;
+- `β > 0` clareia, `β < 0` escurece;
+- `α < 0` inverte (`gain_offset(-1.0, 255.0)` é o negativo).
+
+O resultado é arredondado para o inteiro mais próximo (metade para longe de zero: `14,5` vira `15`) e **saturado** em `[0, m]`. Com `α = 2`, tudo a partir de 128 vira 255 — e não volta: a saturação perde informação, e nenhuma tabela a desfaz.
+
+## Verificado
+
+- A identidade não altera a imagem (proptest em `Rgb8` e `L16`); em 8 bits, a aplicação confere amostra a amostra com uma tabela arbitrária.
+- Gamma e ganho/offset conferem com valores calculados à mão, e `gain_offset` com a fórmula em `f64` para toda a tabela.
+- Saturação nos dois extremos, em 8 e 16 bits.
+- `0` e `m` são fixos em gamma, e a curva é monotônica (proptest sobre `γ`).
+- `apply_lut_in_place` e `apply_lut` dão o mesmo resultado; uma ROI com *stride* dá o mesmo que a sua cópia.
+
+## Limites
+
+- Parâmetro `NaN` produz `0`, sem erro; `γ ≤ 0` não é rejeitado (`γ = 0` leva tudo, menos `0`, a `m`).
+- Uma tabela por canal não relaciona os canais: ajustar só o `R` de um `Rgb8` muda a cor. Operações que dependem do pixel inteiro (saturação, equalização de luminância) não são LUTs.
