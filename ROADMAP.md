@@ -69,7 +69,7 @@ Schedule único, erros, plugins, Frame multi-formato, métricas.
 - [x] #43 feat(pipeline): métricas e spans de tracing por stage e sistema
 - [x] #44 feat(pipeline): harness de teste headless para sistemas e plugins
 - [x] #45 feat(pipeline): condições de parada (fim de fonte, limite de frames, sinal)
-- [ ] #46 feat(pipeline): adaptador para registrar kernels puros como sistemas
+- [x] #46 feat(pipeline): adaptador para registrar kernels puros como sistemas
 
 ## M3 — Cor e operações pontuais
 

@@ -21,6 +21,7 @@ cargo run --example custom_plugin
 - **Componente marcador**: `Without<InvertTag>` na query garante que cada frame seja processado uma única vez. Sem isso, o sistema inverteria o frame de novo a cada tick.
 - **`#[derive(Component)]`** exige `bevy_ecs` como dependência direta do seu projeto — veja [Instalação](../primeiros-passos/instalacao.md).
 - **Kernel separado**: `invert` pode ser testada sem montar um pipeline.
+- **Sem sistema à mão**: quando o sistema só aplica o kernel ao frame, como aqui, `builder.add_op(Stage::Process, invert.tagged::<InvertTag>())` gera o mesmo sistema — ver [Kernels como sistemas](./kernels-como-sistemas.mdx).
 
 ## Sistemas que podem falhar
 

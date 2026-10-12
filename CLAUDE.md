@@ -24,7 +24,7 @@ Rodar `just ci` antes de concluir qualquer mudança; `just docs-build` se tocar 
 Dependência só em uma direção: pipeline → imgproc → core.
 
 ## Convenções (não-negociáveis)
-- Algoritmo novo = função pura em `imgproc` + sistema fino em `pipeline`. Nunca lógica de pixel dentro de sistema.
+- Algoritmo novo = função pura em `imgproc` + sistema fino em `pipeline`. Nunca lógica de pixel dentro de sistema. Kernel `Frame → Frame` entra com `builder.add_op(stage, kernel)`; sistema à mão só quando o resultado é outro componente.
 - API pública retorna `perceptor_core::Result`; `anyhow` só em `examples/`.
 - Sistema não engole erro com `warn!`: retorna `Result` via `fallible(...)` ou chama `PipelineErrors::report_frame`.
 - Teste de sistema/plugin usa `perceptor_pipeline::testing::TestPipeline`, não `World` + `Schedule` montados à mão.
@@ -36,6 +36,7 @@ Dependência só em uma direção: pipeline → imgproc → core.
 ## Armadilhas
 - O pipeline usa o executor single-thread do `bevy_ecs` (os spans de stage dependem disso). Não ligar `multi_threaded` nem trocar o executor; paralelismo é dentro do kernel, com rayon.
 - Teste que instala um subscriber `tracing` vai em binário de teste próprio (`tests/metrics_spans.rs`): o cache de interesse por callsite é global ao processo.
+- Ops de `add_op` rodam na ordem de registro dentro do stage, mas sem ordem em relação a sistemas de `add_system` do mesmo stage. Teste que mede alocação usa alocador global contador e vai em binário próprio (`tests/ops_alloc.rs`).
 - Fonte finita se registra em `Sources` no `Plugin::build` e chama `finish` ao acabar; é isso que encerra `run()`. As condições de parada são avaliadas só no fim do tick. Teste que envia sinal ao processo vai em binário próprio (`tests/stop_signal.rs`).
 - `Commands` só são aplicados no ponto de sincronização seguinte (entre stages, ou entre sistemas ordenados). Sistema que depende de componente inserido por outro do mesmo stage precisa de `(a, b).chain()` — sem isso só vê no tick seguinte, e com `IoPlugin` o frame já foi despawnado.
 - `#[derive(Component)]` fora das crates do workspace exige `bevy_ecs` como dependência direta.

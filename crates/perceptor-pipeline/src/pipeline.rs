@@ -18,6 +18,7 @@ use crate::errors::{
 use crate::frame::Frame;
 #[cfg(feature = "metrics")]
 use crate::metrics::{add_boundary_markers, Boundary, PipelineMetrics};
+use crate::ops::{IntoOpSystem, OpSet};
 use crate::plugin::Plugin;
 use crate::schedule::Stage;
 use crate::stop::{count_new_frames, Sources, StopHandle, StopLimits, StopReason};
@@ -210,6 +211,10 @@ pub struct PipelineBuilder {
     limits: StopLimits,
     #[cfg(feature = "ctrlc")]
     stop_on_ctrl_c: bool,
+    /// Ops registradas com `add_op` até agora.
+    op_count: usize,
+    /// Última op de cada stage, para encadear a seguinte.
+    last_op: [Option<OpSet>; Stage::ALL.len()],
 }
 
 impl Default for PipelineBuilder {
@@ -265,6 +270,8 @@ impl Default for PipelineBuilder {
             limits: StopLimits::default(),
             #[cfg(feature = "ctrlc")]
             stop_on_ctrl_c: false,
+            op_count: 0,
+            last_op: [None; Stage::ALL.len()],
         }
     }
 }
@@ -347,6 +354,22 @@ impl PipelineBuilder {
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
         self.schedule.add_systems(systems.in_set(stage));
+        self
+    }
+
+    /// Registra em `stage` um kernel puro como sistema, sem escrever o
+    /// sistema à mão. Ver [`ops`](crate::ops) para as assinaturas aceitas.
+    ///
+    /// Ops do mesmo stage rodam na ordem em que foram registradas.
+    pub fn add_op<M>(&mut self, stage: Stage, op: impl IntoOpSystem<M>) -> &mut Self {
+        let set = OpSet(self.op_count);
+        self.op_count += 1;
+        let mut system = op.into_op_system().in_set(stage).in_set(set);
+        // `Stage` é um enum sem campos, declarado na ordem de `Stage::ALL`.
+        if let Some(previous) = self.last_op[stage as usize].replace(set) {
+            system = system.after(previous);
+        }
+        self.schedule.add_systems(system);
         self
     }
 

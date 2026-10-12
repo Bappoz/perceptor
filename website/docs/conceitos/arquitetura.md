@@ -40,7 +40,7 @@ Um kernel que não conhece o `World` pode ser:
 - **medido** em um benchmark sem montar um pipeline;
 - **otimizado** (SIMD, paralelismo, GPU) mantendo a versão escalar como referência de corretude.
 
-O sistema ECS correspondente fica reduzido a: consultar frames, chamar o kernel e anexar o resultado.
+O sistema ECS correspondente fica reduzido a: consultar frames, chamar o kernel e anexar o resultado. Quando o resultado substitui o próprio frame, nem esse sistema precisa ser escrito: [`add_op`](../guias/kernels-como-sistemas.mdx) o gera a partir do kernel.
 
 ```rust
 // perceptor-imgproc: função pura

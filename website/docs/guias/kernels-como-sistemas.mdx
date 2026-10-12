@@ -1,0 +1,70 @@
+---
+title: Kernels como sistemas
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/ops.rs';
+
+# Kernels como sistemas
+
+Um kernel é uma função sobre imagens; para rodar no pipeline ele precisa de um sistema que consulte os frames, confira o formato, chame a função e trate o erro. Esse sistema é sempre igual, e `PipelineBuilder::add_op` o gera a partir da assinatura da função.
+
+<CodeBlock language="rust" title="examples/ops.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example ops
+```
+
+## Assinaturas aceitas
+
+| Assinatura | Efeito no frame | Aloca? |
+|---|---|---|
+| `Fn(ImageView<A>) -> Result<Image<B>>` | `frame.data` é substituído pela saída | sim, a imagem de saída (dentro do kernel) |
+| `Fn(ImageViewMut<P>)` | pixels alterados no lugar | não |
+| `Fn(ImageViewMut<P>) -> Result<()>` | idem, podendo falhar | não |
+
+Servem funções nomeadas — todas as de `perceptor-imgproc` — e closures. Em uma closure o tipo do parâmetro precisa estar escrito, porque é dele que sai o formato de entrada:
+
+```rust
+builder.add_op(Stage::Process, move |mut image: ImageViewMut<'_, L8>| {
+    for pixel in image.pixels_mut() {
+        *pixel = L8::new(pixel.luma().saturating_mul(gain));
+    }
+});
+```
+
+Um kernel com parâmetros além da imagem (um limiar, um tamanho de janela) entra do mesmo jeito: uma closure que captura os parâmetros e chama o kernel.
+
+## O que o sistema gerado faz
+
+- **Formato**: só toca frames no formato de entrada (`A` ou `P`). Os demais passam intactos e sem erro, como em `grayscale_system`.
+- **Erro**: um `Err` vai para `PipelineErrors` como erro daquele frame, com o caminho da função como nome do sistema; o frame fica como estava. O que acontece depois é a [`ErrorPolicy`](../conceitos/pipeline-e-stages.md#tratamento-de-erros).
+- **Ordem**: ops do mesmo stage rodam **na ordem em que foram registradas**, então cada uma vê o formato produzido pela anterior. É o contrário de `add_system`, em que sistemas do mesmo stage não têm ordem. Entre uma op e um sistema de `add_system` no mesmo stage também não há ordem: se um depende do outro, ponha-os em stages diferentes.
+
+## Marcação
+
+Sem marcação, a op roda de novo a cada tick sobre um frame que continue no `World` no formato de entrada. Isso não acontece em dois casos: quando a op muda o formato (`Rgb8 → L8` não se aplica duas vezes) e quando o frame é removido em `Stage::Cleanup`, como faz o `IoPlugin`. Fora deles, marque:
+
+```rust
+#[derive(Component, Default)]
+struct Blurred;
+
+builder.add_op(Stage::Process, blur_rows.tagged::<Blurred>());
+```
+
+A op passa a ignorar frames com `Blurred` e insere o componente nos que processar com sucesso. A inserção é via `Commands`, e a op seguinte do mesmo stage já a vê; sistemas de outros stages podem filtrar com `With<Blurred>`.
+
+## Quando escrever o sistema à mão
+
+`add_op` cobre o caso `Frame → Frame`. Continua sendo preciso um [sistema próprio](./escrevendo-um-plugin.mdx) quando o resultado é **outro componente** em vez de substituir o frame (o `SobelMap`), quando a op depende de mais de um componente ou de um recurso, ou quando um frame com erro precisa de tratamento diferente de reportar e seguir.
+
+## Fora do pipeline
+
+A trait `Op` expõe o que o sistema usa, para aplicar a mesma função a um `Frame` avulso:
+
+```rust
+use perceptor::pipeline::ops::Op;
+
+assert_eq!(Op::input_format(&convert_to_gray), PixelFormat::Rgb8);
+Op::apply(&convert_to_gray, &mut frame)?; // FormatMismatch se o frame não for Rgb8
+```
