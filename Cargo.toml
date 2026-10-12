@@ -33,6 +33,8 @@ anyhow = "1.0"
 thiserror = "2.0"
 # Logging/tracing estruturado
 tracing = "0.1"
+# Tratador de Ctrl-C/SIGINT portável (a std não expõe sinais)
+ctrlc = "3.5"
 # Testes de propriedade
 proptest = "1.11"
 # Diretórios temporários em testes
@@ -75,6 +77,8 @@ default = ["metrics"]
 metrics = ["perceptor-pipeline/metrics"]
 # Um span de tracing por sistema (feature `trace` do `bevy_ecs`)
 trace-systems = ["perceptor-pipeline/trace-systems"]
+# `PipelineBuilder::stop_on_ctrl_c`
+ctrlc = ["perceptor-pipeline/ctrlc"]
 ml  = []                # Marcador para habilitar plugins ML (tch-rs / ort)
 
 [[example]]

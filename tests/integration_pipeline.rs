@@ -112,9 +112,10 @@ fn io_pipeline_computes_sobel_before_the_frame_is_despawned() {
     let mut pipeline = builder.build().unwrap();
 
     pipeline.tick().unwrap();
+    // A fonte de um arquivo só não relê: o segundo tick não tem frame.
     pipeline.tick().unwrap();
 
-    assert_eq!(pipeline.world().resource::<SobelSeen>().0, 2);
+    assert_eq!(pipeline.world().resource::<SobelSeen>().0, 1);
     let world = pipeline.world_mut();
     assert_eq!(world.query::<&Frame>().iter(world).count(), 0);
 }

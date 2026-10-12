@@ -10,9 +10,12 @@ Orquestração ECS sobre `bevy_ecs`.
 
 | Item | Descrição |
 |---|---|
-| `Pipeline` | dono do `World` e do schedule; `tick()`, `run()`, `shutdown()`, `errors()`, `metrics()`, `world()`, `world_mut()` |
-| `PipelineBuilder` | `add_plugin`, `add_*_system`, `with_max_ticks`, `with_error_policy`, `build() -> Result<Pipeline>` |
-| `PipelineState` | recurso com `tick_count` e `should_stop` |
+| `Pipeline` | dono do `World` e do schedule; `tick()`, `run() -> Result<StopReason>`, `stop_reason()`, `stop_handle()`, `shutdown()`, `errors()`, `metrics()`, `world()`, `world_mut()` |
+| `PipelineBuilder` | `add_plugin`, `add_*_system`, `with_max_ticks`, `with_max_frames`, `with_max_duration`, `stop_on_ctrl_c` (feature `ctrlc`), `with_error_policy`, `build() -> Result<Pipeline>` |
+| `PipelineState` | recurso com `tick_count` e `frame_count`; `request_stop()`, `should_stop()`, `stop_reason()` |
+| `StopReason` | `Requested`, `Interrupted`, `EndOfStream`, `FrameLimit`, `TickLimit`, `TimeLimit` — ver [Condições de parada](../guias/condicoes-de-parada.mdx) |
+| `Sources` | recurso em que fontes finitas avisam o fim: `register`, `finish`, `is_finished`, `all_finished` |
+| `StopHandle` | pedido de parada de outra thread: `stop()`, `is_stopped()` |
 | `ErrorPolicy` | `FailFast` (padrão), `SkipFrame`, `Continue` |
 | `PipelineErrors` | recurso com os erros do tick: `report`, `report_frame`, `iter`, `len`, `total`, `policy` |
 | `SystemError` | `system`, `frame: Option<Entity>`, `error` |

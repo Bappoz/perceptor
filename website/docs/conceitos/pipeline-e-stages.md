@@ -22,7 +22,7 @@ flowchart LR
 | `Stage::Output` | escrita em disco, exibição |
 | `Stage::Cleanup` | remoção das entidades que a saída já consumiu |
 
-`Pipeline::run()` repete ticks até `PipelineState::should_stop` ser `true`.
+`Pipeline::run()` repete ticks até uma [condição de parada](#controle-de-parada) valer.
 
 ## Ciclo de vida dos frames
 
@@ -42,15 +42,20 @@ Com a limpeza ligada o frame vive um único tick: tudo o que um sistema precisa 
 use perceptor::prelude::*;
 
 let mut pipeline = Pipeline::builder().with_max_ticks(3).build()?;
-pipeline.run()?; // executa exatamente 3 ticks
+let reason = pipeline.run()?; // executa exatamente 3 ticks
+assert_eq!(reason, StopReason::TickLimit);
 ```
 
-`PipelineState` é um recurso ECS com dois campos:
+`run()` devolve o `StopReason` da primeira condição que valer, sempre verificada no fim do tick:
 
-| Campo | Significado |
+| Condição | `StopReason` |
 |---|---|
-| `tick_count` | ticks já executados |
-| `should_stop` | qualquer sistema pode defini-lo para encerrar o loop |
+| um sistema chama `PipelineState::request_stop()`, ou outra thread chama `StopHandle::stop()` | `Requested` |
+| Ctrl-C, com `stop_on_ctrl_c()` (feature `ctrlc`) | `Interrupted` |
+| todas as fontes registradas em `Sources` terminaram | `EndOfStream` |
+| `with_max_frames(n)`, `with_max_ticks(n)`, `with_max_duration(d)` | `FrameLimit`, `TickLimit`, `TimeLimit` |
+
+Uma fonte finita, como o `IoPlugin`, encerra o `run()` sozinha. Detalhes e exemplo em [Condições de parada](../guias/condicoes-de-parada.mdx).
 
 ## Visibilidade de componentes
 

@@ -36,6 +36,7 @@ Dependência só em uma direção: pipeline → imgproc → core.
 ## Armadilhas
 - O pipeline usa o executor single-thread do `bevy_ecs` (os spans de stage dependem disso). Não ligar `multi_threaded` nem trocar o executor; paralelismo é dentro do kernel, com rayon.
 - Teste que instala um subscriber `tracing` vai em binário de teste próprio (`tests/metrics_spans.rs`): o cache de interesse por callsite é global ao processo.
+- Fonte finita se registra em `Sources` no `Plugin::build` e chama `finish` ao acabar; é isso que encerra `run()`. As condições de parada são avaliadas só no fim do tick. Teste que envia sinal ao processo vai em binário próprio (`tests/stop_signal.rs`).
 - `Commands` só são aplicados no ponto de sincronização seguinte (entre stages, ou entre sistemas ordenados). Sistema que depende de componente inserido por outro do mesmo stage precisa de `(a, b).chain()` — sem isso só vê no tick seguinte, e com `IoPlugin` o frame já foi despawnado.
 - `#[derive(Component)]` fora das crates do workspace exige `bevy_ecs` como dependência direta.
 - pnpm 11 falha com script de instalação não declarado: ver `website/pnpm-workspace.yaml` (`allowBuilds`).

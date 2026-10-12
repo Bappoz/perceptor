@@ -4,6 +4,8 @@
 //! cada [`Stage`] é um `SystemSet`. A cada `tick()` o schedule roda uma vez:
 //! os stages em ordem, com os `Commands` de um aplicados antes do seguinte.
 
+use std::time::Instant;
+
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{Schedule, SingleThreadedExecutor};
 use bevy_ecs::system::ScheduleSystem;
@@ -18,6 +20,7 @@ use crate::frame::Frame;
 use crate::metrics::{add_boundary_markers, Boundary, PipelineMetrics};
 use crate::plugin::Plugin;
 use crate::schedule::Stage;
+use crate::stop::{count_new_frames, Sources, StopHandle, StopLimits, StopReason};
 
 /// Motor principal do pipeline de CV.
 ///
@@ -26,7 +29,13 @@ use crate::schedule::Stage;
 pub struct Pipeline {
     world: World,
     schedule: Schedule,
-    max_ticks: Option<u64>,
+    limits: StopLimits,
+    stop_handle: StopHandle,
+    /// Início do primeiro tick: referência do limite de duração.
+    started: Option<Instant>,
+    /// Contagem de Ctrl-C no `build`, se o pipeline os observa.
+    #[cfg(feature = "ctrlc")]
+    ctrl_c_baseline: Option<u64>,
     /// Plugins na ordem de registro; esvaziado por [`Pipeline::shutdown`].
     plugins: Vec<Box<dyn Plugin>>,
 }
@@ -48,7 +57,9 @@ impl Pipeline {
     ///
     /// Os erros reportados pelos sistemas ficam em [`Pipeline::errors`] até o
     /// tick seguinte. O tick conta em [`PipelineState::tick_count`] mesmo
-    /// quando falha.
+    /// quando falha, e as [condições de parada](crate::stop) são avaliadas no
+    /// fim dele. `tick()` não as consulta antes de rodar: quem as respeita é
+    /// [`run`](Self::run).
     ///
     /// # Errors
     /// Em [`ErrorPolicy::FailFast`], o primeiro erro reportado por um sistema
@@ -56,9 +67,10 @@ impl Pipeline {
     pub fn tick(&mut self) -> Result<()> {
         let tick = self.world.resource::<PipelineState>().tick_count + 1;
         let _span = tracing::debug_span!("tick", tick).entered();
+        let started = *self.started.get_or_insert_with(Instant::now);
         self.world.resource_mut::<PipelineErrors>().begin_tick();
         #[cfg(feature = "metrics")]
-        let started = self.world.resource_mut::<PipelineMetrics>().begin_tick();
+        let tick_started = self.world.resource_mut::<PipelineMetrics>().begin_tick();
 
         self.schedule.run(&mut self.world);
 
@@ -67,15 +79,12 @@ impl Pipeline {
             let dropped = self.world.resource::<PipelineErrors>().discarded_frames();
             self.world
                 .resource_mut::<PipelineMetrics>()
-                .end_tick(started, dropped);
+                .end_tick(tick_started, dropped);
         }
 
-        let mut state = self.world.resource_mut::<PipelineState>();
-        state.tick_count = tick;
-        if let Some(max) = self.max_ticks {
-            if state.tick_count >= max {
-                state.should_stop = true;
-            }
+        self.world.resource_mut::<PipelineState>().tick_count = tick;
+        if let Some(reason) = self.stop_condition(started) {
+            self.world.resource_mut::<PipelineState>().stop_reason = Some(reason);
         }
 
         let mut errors = self.world.resource_mut::<PipelineErrors>();
@@ -90,25 +99,61 @@ impl Pipeline {
         Ok(())
     }
 
-    /// Loop principal: executa ticks até que um sistema de saída sinalize parada.
+    /// Loop principal: executa ticks até uma [condição de parada](crate::stop)
+    /// valer, e devolve qual foi.
     ///
-    /// A condição de parada é controlada pelo recurso [`PipelineState`].
+    /// Em um pipeline já parado não roda nenhum tick. Sem fonte finita, limite
+    /// ou pedido de parada, não retorna.
     ///
     /// # Errors
     /// Propaga o primeiro erro retornado por [`Pipeline::tick`], o que só
     /// acontece em [`ErrorPolicy::FailFast`].
-    pub fn run(&mut self) -> Result<()> {
+    pub fn run(&mut self) -> Result<StopReason> {
         info!("Perceptor pipeline started");
         loop {
-            self.tick()?;
-
-            let state = self.world.resource::<PipelineState>();
-            if state.should_stop {
-                info!("Pipeline stopped by request");
-                break;
+            if let Some(reason) = self.stop_reason() {
+                info!(?reason, "Pipeline stopped");
+                return Ok(reason);
             }
+            self.tick()?;
         }
-        Ok(())
+    }
+
+    /// Por que o pipeline parou, ou `None` se ainda não parou.
+    ///
+    /// # Panics
+    /// Se o recurso [`PipelineState`] tiver sido removido do `World`.
+    #[must_use]
+    pub fn stop_reason(&self) -> Option<StopReason> {
+        self.world.resource::<PipelineState>().stop_reason
+    }
+
+    /// Handle para pedir parada de fora do pipeline, de qualquer thread.
+    #[must_use]
+    pub fn stop_handle(&self) -> StopHandle {
+        self.stop_handle.clone()
+    }
+
+    /// A condição de parada que vale agora, se o pipeline ainda não parou.
+    fn stop_condition(&self, started: Instant) -> Option<StopReason> {
+        let state = self.world.resource::<PipelineState>();
+        if state.stop_reason.is_some() {
+            return None;
+        }
+        if self.stop_handle.is_stopped() {
+            return Some(StopReason::Requested);
+        }
+        #[cfg(feature = "ctrlc")]
+        if self
+            .ctrl_c_baseline
+            .is_some_and(|baseline| crate::stop::ctrl_c::received() > baseline)
+        {
+            return Some(StopReason::Interrupted);
+        }
+        if self.world.resource::<Sources>().all_finished() {
+            return Some(StopReason::EndOfStream);
+        }
+        self.limits.reached(state, started.elapsed())
     }
 
     /// Encerra o pipeline: chama [`Plugin::cleanup`] de cada plugin, na ordem
@@ -162,7 +207,9 @@ pub struct PipelineBuilder {
     /// Primeiro nome de plugin registrado em duplicata, reportado em `build`.
     duplicate: Option<String>,
     schedule: Schedule,
-    max_ticks: Option<u64>,
+    limits: StopLimits,
+    #[cfg(feature = "ctrlc")]
+    stop_on_ctrl_c: bool,
 }
 
 impl Default for PipelineBuilder {
@@ -183,9 +230,15 @@ impl Default for PipelineBuilder {
         // `SkipFrame` os frames com erro saem antes do stage seguinte.
         for (i, stage) in Stage::ALL.into_iter().enumerate() {
             schedule.configure_sets(stage.run_if(not_halted));
-            let discard = discard_failed_frames
-                .run_if(has_frames_to_discard)
-                .after(stage);
+            let discard = discard_failed_frames.run_if(has_frames_to_discard);
+            // A contagem vem antes do descarte: um frame que falhou já no
+            // `Input` também foi produzido pela fonte.
+            let discard = if stage == Stage::Input {
+                (count_new_frames, discard).chain()
+            } else {
+                discard
+            };
+            let discard = discard.after(stage);
             // O descarte conta no tempo do stage que falhou.
             #[cfg(feature = "metrics")]
             let discard = discard.before(Boundary(i + 1));
@@ -197,6 +250,8 @@ impl Default for PipelineBuilder {
 
         let mut world = World::default();
         world.init_resource::<PipelineErrors>();
+        world.init_resource::<PipelineState>();
+        world.init_resource::<Sources>();
         #[cfg(feature = "metrics")]
         {
             add_boundary_markers(&mut schedule);
@@ -207,19 +262,51 @@ impl Default for PipelineBuilder {
             plugins: Vec::new(),
             duplicate: None,
             schedule,
-            max_ticks: None,
+            limits: StopLimits::default(),
+            #[cfg(feature = "ctrlc")]
+            stop_on_ctrl_c: false,
         }
     }
 }
 
 impl PipelineBuilder {
-    /// Define o número máximo de ticks antes de encerrar o pipeline automaticamente.
-    ///
-    /// Quando `tick_count >= n`, [`PipelineState::should_stop`] é definido como `true`.
-    /// Útil para processamento em lote de N frames.
+    /// Para depois de `n` ticks ([`StopReason::TickLimit`]).
     #[must_use]
     pub fn with_max_ticks(mut self, n: u64) -> Self {
-        self.max_ticks = Some(n);
+        self.limits.ticks = Some(n);
+        self
+    }
+
+    /// Para quando [`PipelineState::frame_count`] chegar a `n`
+    /// ([`StopReason::FrameLimit`]).
+    ///
+    /// O limite é verificado no fim do tick: uma fonte que cria vários frames
+    /// por tick pode passar de `n`, e nenhum frame criado fica sem processar.
+    #[must_use]
+    pub fn with_max_frames(mut self, n: u64) -> Self {
+        self.limits.frames = Some(n);
+        self
+    }
+
+    /// Para no fim do primeiro tick que terminar `duration` ou mais depois do
+    /// início do primeiro ([`StopReason::TimeLimit`]).
+    #[must_use]
+    pub fn with_max_duration(mut self, duration: std::time::Duration) -> Self {
+        self.limits.duration = Some(duration);
+        self
+    }
+
+    /// Para no fim do tick em andamento quando o processo recebe Ctrl-C
+    /// ([`StopReason::Interrupted`]).
+    ///
+    /// O tratador é instalado em [`build`](Self::build), uma vez por processo,
+    /// e vale para todos os pipelines que pedirem isto. Depois de instalado, o
+    /// Ctrl-C deixa de encerrar o processo: quem chama `run()` decide o que
+    /// fazer quando ele retorna.
+    #[cfg(feature = "ctrlc")]
+    #[must_use]
+    pub fn stop_on_ctrl_c(mut self) -> Self {
+        self.stop_on_ctrl_c = true;
         self
     }
 
@@ -322,6 +409,8 @@ impl PipelineBuilder {
     /// - [`Error::DuplicatePlugin`] se dois plugins tiverem o mesmo nome.
     /// - [`Error::MissingPluginDependency`] se um plugin declarar em
     ///   [`Plugin::dependencies`] um nome que não foi registrado.
+    /// - [`Error::SignalHandler`] se `stop_on_ctrl_c` foi pedido e o processo
+    ///   já tem outro tratador de Ctrl-C.
     pub fn build(mut self) -> Result<Pipeline> {
         if let Some(name) = self.duplicate.take() {
             return Err(Error::DuplicatePlugin { name });
@@ -339,8 +428,11 @@ impl PipelineBuilder {
             }
         }
 
-        // Inicializa recurso de estado do pipeline
-        self.world.insert_resource(PipelineState::default());
+        #[cfg(feature = "ctrlc")]
+        let ctrl_c_baseline = self
+            .stop_on_ctrl_c
+            .then(crate::stop::ctrl_c::watch)
+            .transpose()?;
 
         // Permite que plugins façam ajustes finais após todos serem registrados
         let plugins = std::mem::take(&mut self.plugins);
@@ -351,7 +443,11 @@ impl PipelineBuilder {
         Ok(Pipeline {
             world: self.world,
             schedule: self.schedule,
-            max_ticks: self.max_ticks,
+            limits: self.limits,
+            stop_handle: StopHandle::default(),
+            started: None,
+            #[cfg(feature = "ctrlc")]
+            ctrl_c_baseline,
             plugins,
         })
     }
@@ -379,15 +475,39 @@ pub fn despawn_processed_frames_system(frames: Query<Entity, With<Frame>>, mut c
 
 // ── Recursos globais do pipeline ───────────────────────────────────────────────
 
-/// Recurso que controla o ciclo de vida do pipeline.
+/// Recurso com o progresso do pipeline e o pedido de parada.
 ///
-/// Sistemas podem definir `should_stop = true` para encerrar o loop principal.
+/// Um sistema encerra o loop de [`Pipeline::run`] com
+/// [`request_stop`](Self::request_stop); as demais condições estão em
+/// [`stop`](crate::stop).
 #[derive(Resource, Debug, Default)]
 pub struct PipelineState {
-    /// Quando `true`, o loop em [`Pipeline::run`] termina após o tick atual.
-    pub should_stop: bool,
-    /// Contador de ticks executados (útil para benchmarks e logs).
+    /// Ticks concluídos. Durante um tick, ainda não conta o tick em andamento.
     pub tick_count: u64,
+    /// Frames criados desde o início, contados logo depois de `Stage::Input`.
+    /// Um frame criado em outro stage entra na conta no tick seguinte.
+    pub frame_count: u64,
+    pub(crate) stop_reason: Option<StopReason>,
+}
+
+impl PipelineState {
+    /// Pede que o pipeline pare ao fim do tick em andamento, com
+    /// [`StopReason::Requested`]. Não tem efeito se ele já parou.
+    pub fn request_stop(&mut self) {
+        self.stop_reason.get_or_insert(StopReason::Requested);
+    }
+
+    /// `true` se o pipeline já tem um motivo para parar.
+    #[must_use]
+    pub fn should_stop(&self) -> bool {
+        self.stop_reason.is_some()
+    }
+
+    /// Por que o pipeline parou, ou `None` se ainda não parou.
+    #[must_use]
+    pub fn stop_reason(&self) -> Option<StopReason> {
+        self.stop_reason
+    }
 }
 
 #[cfg(test)]
@@ -411,7 +531,7 @@ mod tests {
         pipeline.run().unwrap();
         let state = pipeline.world().resource::<PipelineState>();
         assert_eq!(state.tick_count, 3);
-        assert!(state.should_stop);
+        assert!(state.should_stop());
     }
 
     #[derive(Resource, Default)]

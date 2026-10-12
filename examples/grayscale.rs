@@ -25,7 +25,9 @@ fn main() -> anyhow::Result<()> {
         })
         .build()?;
 
-    // O IoPlugin lê um frame por tick e sinaliza parada após escrever a saída.
-    pipeline.run()?;
+    // O `IoPlugin` é uma fonte finita: depois de ler o arquivo ela avisa que
+    // terminou, e `run()` volta com `StopReason::EndOfStream`.
+    let reason = pipeline.run()?;
+    println!("pipeline encerrado: {reason:?}");
     Ok(())
 }

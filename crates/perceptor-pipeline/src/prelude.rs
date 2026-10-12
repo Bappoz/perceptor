@@ -6,9 +6,10 @@
 pub use crate::{
     errors::{fallible, ErrorPolicy, PipelineErrors},
     frame::{Frame, FrameData, FrameMeta},
-    pipeline::{Pipeline, PipelineBuilder},
+    pipeline::{Pipeline, PipelineBuilder, PipelineState},
     plugin::Plugin,
     schedule::Stage,
+    stop::{Sources, StopHandle, StopReason},
 };
 
 #[cfg(feature = "metrics")]
