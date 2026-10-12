@@ -114,6 +114,15 @@ pub enum Error {
         actual: (usize, usize),
     },
 
+    /// Um parâmetro fora do domínio da operação (ex.: grade de tiles vazia).
+    #[error("parâmetro `{name}` inválido: {reason}")]
+    InvalidParameter {
+        /// Nome do parâmetro, como na assinatura da função.
+        name: &'static str,
+        /// Por que o valor não serve.
+        reason: &'static str,
+    },
+
     /// O lado de uma janela local (bloco, kernel) deve ser ímpar e maior que 1.
     #[error("janela de lado {size} inválida: o lado precisa ser ímpar e maior que 1")]
     InvalidWindowSize {
@@ -246,6 +255,18 @@ mod tests {
     fn unsupported_channels_reports_count() {
         let err = Error::UnsupportedChannels { channels: 2 };
         assert_eq!(err.to_string(), "número de canais não suportado: 2");
+    }
+
+    #[test]
+    fn invalid_parameter_reports_name_and_reason() {
+        let err = Error::InvalidParameter {
+            name: "clip_limit",
+            reason: "precisa ser finito e positivo",
+        };
+        assert_eq!(
+            err.to_string(),
+            "parâmetro `clip_limit` inválido: precisa ser finito e positivo"
+        );
     }
 
     #[test]

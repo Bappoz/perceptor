@@ -8,6 +8,7 @@
 
 pub mod adaptive;
 pub mod channels;
+pub mod clahe;
 pub mod grayscale;
 pub mod histogram;
 pub mod hsv;

@@ -107,6 +107,16 @@ pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) ->
 
 `ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
 
+## `clahe`
+
+Guia: [CLAHE](../guias/histograma.mdx#clahe).
+
+```rust
+pub fn clahe(input: ImageView<'_, L8>, clip_limit: f64, tiles: (usize, usize)) -> Result<Image<L8>>
+```
+
+`tiles` é `(colunas, linhas)`. Erros: `InvalidParameter` (`tiles` com um eixo zero ou maior que a imagem; `clip_limit` não finito ou `≤ 0`) e `Allocation`.
+
 ## `histogram`
 
 Guia: [Histograma e equalização](../guias/histograma.mdx).
