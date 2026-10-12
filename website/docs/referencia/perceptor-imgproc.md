@@ -107,6 +107,27 @@ pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) ->
 
 `ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
 
+## `lut`
+
+Guia: [Tabelas de consulta](../guias/lut-e-gamma.mdx).
+
+```rust
+pub struct Lut<T: LutSample>   // T = u8 (256 entradas) ou u16 (65 536)
+impl<T: LutSample> Lut<T> {
+    pub fn identity() -> Self
+    pub fn invert() -> Self
+    pub fn gamma(gamma: f64) -> Self
+    pub fn gain_offset(gain: f64, offset: f64) -> Self
+    pub fn from_fn(f: impl FnMut(T) -> T) -> Self
+    pub fn as_slice(&self) -> &[T]
+}
+pub fn apply_lut<P: Pixel>(input: ImageView<'_, P>, lut: &Lut<P::Subpixel>) -> Result<Image<P>>
+pub fn apply_lut_in_place<P: Pixel>(image: ImageViewMut<'_, P>, lut: &Lut<P::Subpixel>)
+pub fn apply_lut_per_channel<P: Pixel>(input: ImageView<'_, P>, luts: &[Lut<P::Subpixel>]) -> Result<Image<P>>
+```
+
+`P::Subpixel` precisa ser `u8` ou `u16`; formatos `f32` não compilam. `apply_lut` aplica a mesma tabela a todos os canais, alfa incluído. Erros: `ChannelMismatch` (`apply_lut_per_channel` com número errado de tabelas) e `Allocation`.
+
 ## `adaptive`
 
 Guia: [Limiar adaptativo](../guias/limiarizacao.mdx#limiar-adaptativo).
