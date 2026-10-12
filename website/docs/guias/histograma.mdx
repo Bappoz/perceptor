@@ -1,0 +1,75 @@
+---
+title: Histograma e equalização
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/histogram.rs';
+
+# Histograma e equalização
+
+O **histograma** de um canal de 8 bits conta quantos pixels existem em cada um dos 256 níveis. Ele joga fora a posição e guarda só a distribuição de intensidade — o suficiente para saber se uma imagem está sub ou superexposta, para escolher um limiar ([Otsu](./limiarizacao.mdx#otsu)) ou para redistribuir os tons. As funções ficam em `perceptor::imgproc::histogram`.
+
+<CodeBlock language="rust" title="examples/histogram.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example histogram
+```
+
+## Histograma
+
+`Histogram` é `[u64; 256]`: `h[v]` é o número de pixels com nível `v`.
+
+| Função | Devolve |
+|---|---|
+| `histogram(view, canal, máscara)` | o histograma de um canal |
+| `histograms(view, máscara)` | um histograma por canal, em uma só passada |
+| `cumulative(&h)` | a soma acumulada: `c[v]` conta os pixels com nível `≤ v` |
+
+Servem a qualquer formato de 8 bits (`L8`, `Rgb8`, `Rgba8`, …) e a visões com *stride*, como uma ROI.
+
+### Máscara
+
+`máscara` é um `Option<ImageView<L8>>` com as dimensões da imagem. Só os pixels em que ela é **diferente de `0`** entram na contagem — o que permite medir uma região (o objeto segmentado, a face detectada) sem copiá-la. Dimensões diferentes dão `ShapeMismatch`, e um canal fora do formato dá `ChannelOutOfRange`.
+
+Com máscara, a soma do histograma é o número de pixels ligados, não `largura × altura`.
+
+## Equalização
+
+Uma imagem de baixo contraste usa só um pedaço da faixa. Equalizar redistribui os níveis para que o histograma fique o mais plano possível, ocupando `0..=255`. A transformação é a **função de distribuição acumulada** do próprio histograma, reescalada:
+
+```text
+               cdf(v) − cdf_min
+lut[v] = 255 · ──────────────────
+                 N − cdf_min
+```
+
+`N` é o total de pixels e `cdf_min` a CDF do menor nível presente: ele vai a `0` e o maior a `255`. A intuição: um nível que acumula metade dos pixels vai para a metade da faixa, qualquer que seja o valor dele.
+
+| Função | Faz |
+|---|---|
+| `equalization_lut(&h)` | a `Lut<u8>` que equaliza uma imagem com o histograma `h` |
+| `equalize(view)` | histograma + tabela + aplicação, para `L8` |
+
+Como `equalization_lut` devolve uma [`Lut`](./lut-e-gamma.mdx), a transformação aplica-se com `apply_lut`/`apply_lut_in_place`, e o histograma pode vir de **outra fonte** — de uma máscara, como no exemplo, ou de um quadro de referência. É assim que se equaliza a imagem inteira pelas estatísticas de uma região.
+
+### Propriedades
+
+- **Preserva a ordem**: se `a ≤ b`, então `lut[a] ≤ lut[b]`. A equalização nunca troca qual pixel é mais claro, só afasta ou aproxima os tons.
+- **Ocupa a faixa**: com dois ou mais níveis presentes, o menor vai a `0` e o maior a `255`.
+- **Arredondamento**: metade para cima, em aritmética inteira (`127,5` vira `128`). Com contagens muito grandes, o produto é feito em `u128`, sem estouro.
+- **Sem contraste, sem mudança**: imagem de um só nível, ou histograma vazio (máscara toda em `0`), dá a identidade.
+
+### Limites
+
+- **O histograma não fica perfeitamente plano.** Os níveis são discretos: um nível com muitos pixels não pode ser dividido, só movido. O que se obtém é uma CDF aproximadamente linear.
+- **Amplifica ruído** em regiões quase uniformes: uma faixa estreita de níveis, quase toda ruído, vira uma faixa larga. Equalização *adaptativa* com limite de contraste (CLAHE) é o remédio, e é um outro chunk.
+- **Cor**: `equalize` é para um canal. Equalizar cada canal do RGB separadamente desloca as cores; o usual é equalizar só a luminância (o canal `V` do HSV, por exemplo) e recompor. Isso é uma composição de funções que já existem, mas não há teste nem exemplo dela aqui.
+- Só 8 bits. Histograma de `L16` precisa decidir o número de *bins* e não está nesta versão.
+
+## Verificado
+
+- A soma do histograma é o número de pixels, com e sem máscara (proptest em `Rgb8`, três canais); com máscara, é o número de pixels ligados dela.
+- Contagens e tabelas conferem com valores calculados à mão, inclusive o arredondamento de `127,5`.
+- A tabela é monotônica e vai de `0` a `255` em qualquer histograma de dois ou mais níveis (proptest).
+- Uma imagem com níveis entre 100 e 140 passa a usar `0..=255`.
+- `equalize` é, exatamente, `apply_lut` da tabela do próprio histograma; uma ROI com *stride* conta como a sua cópia.

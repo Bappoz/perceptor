@@ -107,6 +107,21 @@ pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) ->
 
 `ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
 
+## `histogram`
+
+Guia: [Histograma e equalização](../guias/histograma.mdx).
+
+```rust
+pub type Histogram = [u64; 256];
+pub fn histogram<P: Pixel<Subpixel = u8>>(input: ImageView<'_, P>, channel: usize, mask: Option<ImageView<'_, L8>>) -> Result<Histogram>
+pub fn histograms<P: Pixel<Subpixel = u8>>(input: ImageView<'_, P>, mask: Option<ImageView<'_, L8>>) -> Result<Vec<Histogram>>
+pub fn cumulative(histogram: &Histogram) -> Histogram
+pub fn equalization_lut(histogram: &Histogram) -> Lut<u8>
+pub fn equalize(input: ImageView<'_, L8>) -> Result<Image<L8>>
+```
+
+A máscara conta onde é diferente de `0`. Erros: `ChannelOutOfRange` (canal fora do formato), `ShapeMismatch` (máscara de outro tamanho) e `Allocation` (`equalize`).
+
 ## `lut`
 
 Guia: [Tabelas de consulta](../guias/lut-e-gamma.mdx).
