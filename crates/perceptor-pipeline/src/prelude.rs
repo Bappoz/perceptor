@@ -6,6 +6,7 @@
 pub use crate::{
     errors::{fallible, ErrorPolicy, PipelineErrors},
     frame::{Frame, FrameData, FrameMeta},
+    ops::Op,
     pipeline::{Pipeline, PipelineBuilder, PipelineState},
     plugin::Plugin,
     schedule::Stage,
