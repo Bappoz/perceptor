@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M3 — Cor e operações pontuais (em andamento)
 
+- `imgproc::threshold`: `threshold` e `threshold_in_place` com `ThresholdType::{Binary, BinaryInv, Trunc, ToZero, ToZeroInv}`, e limiar automático de Otsu (`otsu_level`, `otsu_from_histogram`, `threshold_otsu`), que devolve o meio do empate quando há um vão entre os modos ([#51](https://github.com/Bappoz/perceptor/issues/51)).
 - `imgproc::yuv`: `i420_to_rgb`, `nv12_to_rgb` e `yuyv_to_rgb` sobre visões de bytes do buffer original, com `YuvSpec` para matriz (BT.601/BT.709) e faixa (limitada/completa); ponto fixo Q14 a um nível da referência em `f64`. Dimensões ímpares dão o novo erro `OddDimensions` ([#50](https://github.com/Bappoz/perceptor/issues/50)).
 - `imgproc::hsv`: `rgb_to_hsv`, `hsv_to_rgb`, `rgb_to_hsl` e `hsl_to_rgb`, em 8 bits e em `f32`. Quatro formatos de pixel novos em `perceptor-core` — `Hsv8`, `Hsl8` (matiz em `0..180`), `HsvF32`, `HslF32` (matiz em graus) — aceitos também pelo `Frame`. A ida e volta em 8 bits erra até 4 níveis em HSV e 5 em HSL, medidos sobre todos os valores RGB ([#49](https://github.com/Bappoz/perceptor/issues/49)).
 - `imgproc::channels`: `rgb_to_bgr`/`bgr_to_rgb`, `add_alpha`/`drop_alpha`, `bgr_to_rgba`/`rgba_to_bgr`, `swap_channels` no lugar, `extract_channel`, `split_channels` e `merge_channels`, com round-trip exato e um golden por conversão. Novo erro `ChannelOutOfRange` ([#48](https://github.com/Bappoz/perceptor/issues/48)).

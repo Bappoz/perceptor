@@ -79,7 +79,7 @@ Conversões de cor, threshold, LUT, histograma, aritmética.
 - [x] #48 feat(imgproc): conversões RGB↔BGR↔RGBA e troca/extração de canais
 - [x] #49 feat(imgproc): conversão RGB↔HSV/HSL
 - [x] #50 feat(imgproc): conversão YUV (YUYV, NV12, I420) → RGB
-- [ ] #51 feat(imgproc): threshold binário, inverso, truncado e Otsu
+- [x] #51 feat(imgproc): threshold binário, inverso, truncado e Otsu
 - [ ] #52 feat(imgproc): threshold adaptativo (média e gaussiano)
 - [ ] #53 feat(imgproc): LUT, gamma e brilho/contraste
 - [ ] #54 feat(imgproc): histograma e equalização

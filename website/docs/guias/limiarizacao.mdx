@@ -1,0 +1,62 @@
+---
+title: Limiarização
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/threshold.rs';
+
+# Limiarização
+
+Limiarizar é decidir, pixel a pixel, de que lado de um valor ele está. É o passo que transforma uma imagem em tons de cinza em uma **máscara**: objeto de um lado, fundo do outro. As funções ficam em `perceptor::imgproc::threshold` e operam sobre `L8`.
+
+<CodeBlock language="rust" title="examples/threshold.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example threshold
+```
+
+## Tipos
+
+`threshold(view, t, max, tipo)` compara cada pixel `v` com o limiar `t`. A comparação é sempre `v > t`, **estrita**: um pixel igual ao limiar fica do lado de baixo.
+
+| `ThresholdType` | `v > t` | caso contrário | Uso |
+|---|---|---|---|
+| `Binary` (padrão) | `max` | `0` | máscara do que é claro |
+| `BinaryInv` | `0` | `max` | máscara do que é escuro |
+| `Trunc` | `t` | `v` | corta os claros em um teto |
+| `ToZero` | `v` | `0` | mantém os claros, apaga o resto |
+| `ToZeroInv` | `0` | `v` | mantém os escuros, apaga o resto |
+
+`max` é o valor dos pixels "ligados" nos dois tipos binários; os outros três o ignoram. Com `t = 255` nada passa; com `t = 0` passa tudo menos o próprio `0`.
+
+`threshold` aloca a saída. `threshold_in_place(view_mut, t, max, tipo)` altera o próprio buffer e não aloca, e é a que entra em [`add_op`](./kernels-como-sistemas.mdx).
+
+## Otsu
+
+Escolher `t` à mão funciona até a iluminação mudar. O método de Otsu tira o limiar do **histograma**: testa os 256 limiares possíveis e fica com o que divide os pixels em duas classes mais distintas, medidas pela variância entre classes:
+
+```text
+σ²(t) = w0(t) · w1(t) · (μ0(t) − μ1(t))²
+```
+
+`w0` e `w1` são as frações de pixels abaixo e acima de `t`, e `μ0`, `μ1` as médias de cada lado. O produto é grande quando as duas classes têm tamanho razoável **e** médias afastadas.
+
+| Função | Devolve |
+|---|---|
+| `otsu_level(view)` | o limiar |
+| `otsu_from_histogram(&[u64; 256])` | o limiar, a partir de um histograma já contado |
+| `threshold_otsu(view, max, tipo)` | `(limiar usado, imagem limiarizada)` |
+
+Casos em que "o melhor limiar" não é único:
+
+- **Empate**: quando há um vão sem pixels entre os dois modos, todo limiar dentro do vão separa igualmente bem. A função devolve o **meio do empate**, o mais distante dos dois modos — entre picos em 50 e 200, devolve 124. (O OpenCV devolve o primeiro, colado no modo de baixo.)
+- **Um só nível na imagem**: devolve esse nível. Como nada é maior que ele, a saída binária fica toda em `0`.
+- **Histograma vazio**: `0`.
+
+### Quando não usar
+
+Otsu supõe um histograma com **dois modos**. Ele sempre devolve um número, mesmo quando a suposição falha:
+
+- imagem com um modo só (fundo sem objeto): o limiar corta o próprio modo ao meio e a máscara vira ruído;
+- classes muito desbalanceadas (objeto minúsculo): o limiar tende a dividir o fundo;
+- iluminação desigual (sombra, gradiente): nenhum limiar global serve, e o caminho é o limiar adaptativo, que decide por vizinhança.

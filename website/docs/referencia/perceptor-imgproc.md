@@ -93,6 +93,20 @@ pub fn hsl_to_rgb<P: HslColor>(input: ImageView<'_, P>) -> Result<Image<P::Rgb>>
 
 Matiz em `0..180` (graus / 2) nos formatos de 8 bits e em `0.0..360.0` nos de `f32`. Constantes `HSV8_ROUND_TRIP_TOLERANCE` (4), `HSL8_ROUND_TRIP_TOLERANCE` (5) e `F32_ROUND_TRIP_TOLERANCE` (`1e-5`): erro máximo por canal na ida e volta a partir de RGB. Erro em runtime: só `Allocation`.
 
+## `threshold`
+
+Guia: [Limiarização](../guias/limiarizacao.mdx).
+
+```rust
+pub fn threshold(input: ImageView<'_, L8>, thresh: u8, max: u8, kind: ThresholdType) -> Result<Image<L8>>
+pub fn threshold_in_place(image: ImageViewMut<'_, L8>, thresh: u8, max: u8, kind: ThresholdType)
+pub fn otsu_level(input: ImageView<'_, L8>) -> u8
+pub fn otsu_from_histogram(histogram: &[u64; 256]) -> u8
+pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) -> Result<(u8, Image<L8>)>
+```
+
+`ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
+
 ## `yuv`
 
 Guia: [YUV → RGB](../guias/cor-e-canais.mdx#yuv--rgb).

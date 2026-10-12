@@ -23,7 +23,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Guias',
-      items: ['guias/escrevendo-um-plugin', 'guias/kernels-como-sistemas', 'guias/cor-e-canais', 'guias/metricas', 'guias/condicoes-de-parada', 'guias/testes', 'guias/fuzzing'],
+      items: ['guias/escrevendo-um-plugin', 'guias/kernels-como-sistemas', 'guias/cor-e-canais', 'guias/limiarizacao', 'guias/metricas', 'guias/condicoes-de-parada', 'guias/testes', 'guias/fuzzing'],
     },
     {
       type: 'category',
