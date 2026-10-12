@@ -96,6 +96,15 @@ pub enum Error {
         height: usize,
     },
 
+    /// A operação exige largura e altura pares (ex.: croma subamostrado).
+    #[error("dimensões {width}×{height} precisam ser pares")]
+    OddDimensions {
+        /// Largura da imagem.
+        width: usize,
+        /// Altura da imagem.
+        height: usize,
+    },
+
     /// Duas imagens que deveriam ter as mesmas dimensões não têm.
     #[error("dimensões {}×{} diferentes das esperadas {}×{}", .actual.0, .actual.1, .expected.0, .expected.1)]
     ShapeMismatch {

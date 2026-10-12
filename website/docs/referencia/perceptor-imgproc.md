@@ -93,6 +93,18 @@ pub fn hsl_to_rgb<P: HslColor>(input: ImageView<'_, P>) -> Result<Image<P::Rgb>>
 
 Matiz em `0..180` (graus / 2) nos formatos de 8 bits e em `0.0..360.0` nos de `f32`. Constantes `HSV8_ROUND_TRIP_TOLERANCE` (4), `HSL8_ROUND_TRIP_TOLERANCE` (5) e `F32_ROUND_TRIP_TOLERANCE` (`1e-5`): erro máximo por canal na ida e volta a partir de RGB. Erro em runtime: só `Allocation`.
 
+## `yuv`
+
+Guia: [YUV → RGB](../guias/cor-e-canais.mdx#yuv--rgb).
+
+```rust
+pub fn i420_to_rgb(y: ImageView<'_, L8>, u: ImageView<'_, L8>, v: ImageView<'_, L8>, spec: YuvSpec) -> Result<Image<Rgb8>>
+pub fn nv12_to_rgb(y: ImageView<'_, L8>, uv: ImageView<'_, L8>, spec: YuvSpec) -> Result<Image<Rgb8>>
+pub fn yuyv_to_rgb(packed: ImageView<'_, L8>, spec: YuvSpec) -> Result<Image<Rgb8>>
+```
+
+`YuvSpec { matrix: YuvMatrix, range: YuvRange }`, com `BT601_LIMITED` (padrão), `BT601_FULL`, `BT709_LIMITED` e `BT709_FULL`. Ponto fixo Q14, a no máximo um nível de `yuv::reference::yuv_to_rgb(y, cb, cr, spec)`. Croma sem interpolação. Erros: `OddDimensions`, `ShapeMismatch`, `BufferLength`, `Allocation`.
+
 ## `sobel`
 
 ```rust
