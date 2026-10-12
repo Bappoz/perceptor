@@ -73,7 +73,7 @@ mod tests {
 
         test.assert_has::<GrayscaleTag>(frame);
         assert_eq!(test.frame(frame).format(), PixelFormat::L8);
-        // R puro: 0.299 · 255 truncado.
+        // R puro: 0.299 · 255 = 76.245.
         assert_eq!(test.image::<L8>(frame).as_pixels(), [L8::new(76); 4]);
     }
 

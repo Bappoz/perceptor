@@ -8,6 +8,7 @@ Rust 1.95+ (workspace) · `bevy_ecs` 0.20 · `ndarray` 0.17 · `image` 0.25 · `
 just ci           # fmt-check → clippy -D warnings → test → rustdoc → build
 just test -p perceptor-imgproc   # testes de uma crate
 just docs-build   # typecheck + build do site (falha em link quebrado)
+just bench -p perceptor-imgproc --bench grayscale   # criterion; registrar antes/depois no PR e em performance/index.md
 just docs-dev     # site em modo dev
 ```
 Rodar `just ci` antes de concluir qualquer mudança; `just docs-build` se tocar `website/` ou `examples/`.

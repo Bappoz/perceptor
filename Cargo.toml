@@ -35,6 +35,8 @@ thiserror = "2.0"
 tracing = "0.1"
 # Tratador de Ctrl-C/SIGINT portável (a std não expõe sinais)
 ctrlc = "3.5"
+# Benchmarks estatísticos; sem plotters/rayon, que só servem aos relatórios HTML
+criterion = { version = "0.8", default-features = false, features = ["cargo_bench_support"] }
 # Testes de propriedade
 proptest = "1.11"
 # Diretórios temporários em testes

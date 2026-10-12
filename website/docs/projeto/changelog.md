@@ -6,6 +6,10 @@ title: Changelog
 
 Mudanças por milestone, da mais recente para a mais antiga.
 
+## M3 — Cor e operações pontuais (em andamento)
+
+- Escala de cinza em ponto fixo Q15 com arredondamento, pesos `LumaWeights::{Bt601, Bt709}` (`convert_to_gray_with`), versão de referência em `f64` e paralelismo por faixas de linhas só acima de 65 536 pixels. O resultado de `convert_to_gray` passa a ser arredondado em vez de truncado, então alguns pixels sobem um nível. Primeiro benchmark `criterion` do projeto ([#47](https://github.com/Bappoz/perceptor/issues/47)).
+
 ## M2 — Pipeline v2
 
 - `PipelineBuilder::add_op`: registra um kernel puro como sistema a partir da assinatura dele (`ImageView<A> -> Result<Image<B>>` ou in-place sobre `ImageViewMut<P>`), em ordem de registro dentro do stage e com marcação opcional por componente (`Op::tagged`) ([#46](https://github.com/Bappoz/perceptor/issues/46)).
