@@ -10,6 +10,7 @@ pub mod channels;
 pub mod grayscale;
 pub mod hsv;
 pub mod sobel;
+pub mod yuv;
 
 /// Converte `f32` para `u8` com a semântica de `as`: satura em `[0, 255]` e trunca a fração.
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]

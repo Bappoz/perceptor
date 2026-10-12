@@ -5,10 +5,11 @@ title: Cor e canais
 import CodeBlock from '@theme/CodeBlock';
 import Channels from '!!raw-loader!@site/../examples/channels.rs';
 import Hsv from '!!raw-loader!@site/../examples/hsv.rs';
+import Yuv from '!!raw-loader!@site/../examples/yuv.rs';
 
 # Cor e canais
 
-Operações que mudam o **formato de pixel** de uma imagem: as de [layout](#layout-de-canais), que só movem subpixels, e as de [espaço de cor](#hsv-e-hsl), que fazem conta com os valores. A [escala de cinza](../referencia/perceptor-imgproc.md#grayscale) está na referência.
+Operações que mudam o **formato de pixel** de uma imagem: as de [layout](#layout-de-canais), que só movem subpixels, e as de espaço de cor — [HSV e HSL](#hsv-e-hsl), [YUV](#yuv--rgb) —, que fazem conta com os valores. A [escala de cinza](../referencia/perceptor-imgproc.md#grayscale) está na referência.
 
 ## Layout de canais
 
@@ -131,3 +132,67 @@ Em 8 bits a perda é da representação, não da conta: 180 matizes × 256 satur
 Quem precisa de ida e volta fiel — editar matiz e reconverter — deve usar o caminho `f32`. O de 8 bits serve para o uso mais comum: converter uma vez e limiarizar.
 
 O sentido contrário, HSV → RGB → HSV, não é identidade em nenhum dos caminhos: toda cor com `S = 0` perde o matiz.
+
+## YUV → RGB
+
+Câmeras e decodificadores de vídeo raramente entregam RGB: entregam luminância (`Y`) em resolução cheia e croma (`U`/`Cb`, `V`/`Cr`) subamostrado, porque o olho percebe menos detalhe de cor. `perceptor::imgproc::yuv` converte os três layouts mais comuns.
+
+<CodeBlock language="rust" title="examples/yuv.rs">{Yuv}</CodeBlock>
+
+```bash
+cargo run --example yuv
+```
+
+### Layouts
+
+| Função | Layout | Croma | Entradas |
+|---|---|---|---|
+| `i420_to_rgb(y, u, v, spec)` | planar 4:2:0 | um par por bloco 2×2 | `y`: `w × h`; `u`, `v`: `w/2 × h/2` |
+| `nv12_to_rgb(y, uv, spec)` | semiplanar 4:2:0 | um par por bloco 2×2 | `y`: `w × h`; `uv`: `w × h/2`, bytes `U V U V …` |
+| `yuyv_to_rgb(packed, spec)` | empacotado 4:2:2 | um par a cada 2 pixels da linha | `packed`: `2w × h`, bytes `Y0 U Y1 V` |
+
+Todas as entradas são `ImageView<L8>`, isto é, **visões de bytes**. Cada plano é criado com `ImageView::new(bytes, largura, altura, stride)` sobre o buffer original, com o próprio stride: nada é copiado antes da conversão. Por isso a largura da visão é em bytes — a do plano `UV` do NV12 é a mesma do `Y`, e a do YUYV é o dobro da largura da imagem.
+
+O croma **não é interpolado**: cada amostra vale para o bloco inteiro que cobre.
+
+### Matriz e faixa
+
+`YuvSpec` diz como o YUV foi codificado:
+
+| Campo | Valores | Significado |
+|---|---|---|
+| `matrix` | `YuvMatrix::Bt601` (padrão), `Bt709` | pesos de luminância: SD/JPEG/webcams × HD |
+| `range` | `YuvRange::Limited` (padrão), `Full` | `Y` em `16..=235` e croma em `16..=240` × tudo em `0..=255` |
+
+As quatro combinações têm constantes: `YuvSpec::BT601_LIMITED` (o padrão), `BT601_FULL` (JPEG), `BT709_LIMITED`, `BT709_FULL`.
+
+Com `Kr`, `Kb` da matriz, `Kg = 1 − Kr − Kb`, e depois de normalizar a faixa (`Y' = (Y − 16)·255/219`, croma `(C − 128)·255/224` na limitada):
+
+```text
+R = Y' + 2(1 − Kr)·Cr
+G = Y' − [2Kb(1 − Kb)/Kg]·Cb − [2Kr(1 − Kr)/Kg]·Cr
+B = Y' + 2(1 − Kb)·Cb
+```
+
+O buffer não carrega a especificação. Escolher a errada não dá erro: desloca as cores (faixa trocada lava ou escurece a imagem; matriz trocada puxa verdes e vermelhos). Na dúvida: YUYV de webcam e vídeo SD são BT.601 limitada; vídeo HD é BT.709 limitada; JPEG é BT.601 completa.
+
+Valores fora da faixa limitada são aceitos e o resultado satura em `0..=255`.
+
+### Precisão
+
+A conta é em ponto fixo Q14 e fica a no máximo um nível de `yuv::reference::yuv_to_rgb`, que calcula em `f64`. Vale notar que os tripletos "de livro" são codificações arredondadas: `(81, 90, 240)`, o vermelho das barras de cor em BT.601 limitada, decodifica para `(254, 0, 0)` também em `f64`.
+
+### Erros
+
+| Erro | Quando |
+|---|---|
+| `OddDimensions { width, height }` | largura ou altura ímpar em 4:2:0; largura ímpar em YUYV (altura ímpar é válida em 4:2:2) |
+| `ShapeMismatch { expected, actual }` | plano de croma com dimensões diferentes das que o `Y` implica |
+| `BufferLength { len, channels: 2 }` | YUYV com número ímpar de bytes por linha |
+| `Allocation` | a saída não pôde ser alocada |
+
+Uma imagem de dimensão ímpar é recusada em vez de ter a última linha ou coluna ignorada: quem decide o que fazer com ela (cortar, replicar a borda) é quem chama.
+
+### Fora do pipeline, por enquanto
+
+Estas funções recebem mais de um plano, então não entram em `add_op`, que cobre `Frame → Frame`. O uso previsto é dentro de uma fonte — captura V4L2, decodificador de vídeo —, que converte para `Rgb8` antes de criar o `Frame` (milestone M7).
