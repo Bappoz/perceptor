@@ -1,0 +1,87 @@
+---
+title: Aritmética e lógica
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/arith.rs';
+
+# Aritmética saturada e lógica bit a bit
+
+Somar, subtrair e comparar imagens pixel a pixel é o bloco de construção de quase tudo: compor uma camada sobre outra, misturar dois quadros, recortar com uma máscara, detectar movimento. As funções ficam em `perceptor::imgproc::arith` e operam sobre qualquer formato de `u8`, `u16` ou (exceto as bit a bit) `f32`.
+
+<CodeBlock language="rust" title="examples/arith.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example arith
+```
+
+## Funções
+
+| Função | Resultado, por canal |
+|---|---|
+| `add(a, b, máscara)` | `a + b`, saturado |
+| `sub(a, b, máscara)` | `a − b`, saturado em `0` |
+| `absdiff(a, b, máscara)` | `\|a − b\|` |
+| `add_weighted(a, α, b, β, γ, máscara)` | `α·a + β·b + γ`, arredondado e saturado |
+| `bitwise_and`, `bitwise_or`, `bitwise_xor` | a operação, bit a bit |
+| `bitwise_not(a, máscara)` | `!a`; em 8 bits, `255 − a` |
+
+Todas devolvem uma imagem nova. Os operandos têm de ter as mesmas dimensões; do contrário, `ShapeMismatch { expected, actual }`.
+
+## Saturação
+
+Em `u8` e `u16` o resultado fica em `[0, máx]`, **sem volta**:
+
+- `200 + 100` dá `255`, não `44`;
+- `10 − 20` dá `0`, não `246`.
+
+Isso é o que se quer em imagem: um pixel que "passou do branco" fica branco. `sub` não é simétrica (`a − b` e `b − a` saturam em lados diferentes); `absdiff` é, e nunca satura — por isso é a escolha para diferença entre quadros. Em `f32` não há corte: `sub` pode dar negativo e `add` passar de `1.0`.
+
+As funções bit a bit só existem para `u8` e `u16`; passar uma imagem `f32` é erro de compilação, não de execução.
+
+## `add_weighted`
+
+`α·a + β·b + γ` com arredondamento para o mais próximo (metade para longe de zero) e saturação. Alguns usos:
+
+| Parâmetros | Faz |
+|---|---|
+| `α = 1 − t`, `β = t`, `γ = 0` | mistura linear (*crossfade*) de `a` para `b` |
+| `α = 1`, `β = 0`, `γ = 40` | clareia `a` em 40 níveis |
+| `α = 2`, `β = −1`, `γ = 0` | extrapola de `b` para além de `a` (satura nas pontas) |
+
+Com `α + β = 1` e `γ = 0`, a saída fica entre os dois operandos.
+
+## Máscara
+
+O último argumento é um `Option<ImageView<L8>>` com as dimensões das imagens. A operação só vale onde a máscara é **diferente de `0`**; fora dela, o resultado é o **primeiro operando**, sem alteração.
+
+```rust
+// soma 100 de brilho só dentro da região
+let out = add(fundo.view(), brilho.view(), Some(regiao.view()))?;
+```
+
+Essa escolha (manter `a`, em vez de zerar) faz `add(fundo, camada, máscara)` ser a composição de "camada sobre fundo, dentro da máscara". Quem prefere o recorte puro (zero fora da máscara) combina com `bitwise_and` com a própria máscara, como no exemplo. A máscara vale para **todos os canais** de um pixel.
+
+## Detecção de movimento
+
+O padrão do exemplo é o clássico:
+
+1. `absdiff(quadro_anterior, quadro_atual)`: grande onde algo mudou;
+2. [`threshold`](./limiarizacao.mdx) do resultado, para virar uma máscara de `0`/`255`;
+3. usar a máscara em outras operações (brilho, recorte, contagem).
+
+O limiar absorve o ruído do sensor, que faz `absdiff` dar valores pequenos em toda a imagem.
+
+## Limites
+
+- Só imagens do **mesmo formato**: `add` de um `Rgb8` com um `L8` não compila. Converta antes ([`convert_depth`](./profundidade-e-normalizacao.mdx), [`channels`](./cor-e-canais.mdx)).
+- `add_weighted` passa por `f64` canal a canal; é correto e simples, não o caminho mais rápido. Otimizar é trabalho para um benchmark, não para esta versão.
+- Não há versão no lugar (`a += b`). A máscara mantém `a` na saída nova, o que cobre o uso comum.
+
+## Verificado
+
+- `add`, `sub`, `absdiff` e as três operações bit a bit conferem com uma implementação ingênua em `i32` com *clamp*, com e sem máscara (proptest em `L8`); `add_weighted` confere com a fórmula em `f64`.
+- Saturação nos dois extremos em 8 e 16 bits, e ausência dela em `f32`.
+- De Morgan (`!(a & b) == !a | !b`) em `Rgb8` aleatório; `a ^ a == 0`; `!!a == a`.
+- Fora da máscara, o primeiro operando é preservado; máscara toda em `0` devolve `a`; a máscara vale para todos os canais.
+- `ShapeMismatch` para operando e para máscara de outras dimensões, em todas as funções.

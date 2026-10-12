@@ -6,8 +6,9 @@ title: Changelog
 
 Mudanças por milestone, da mais recente para a mais antiga.
 
-## M3 — Cor e operações pontuais (em andamento)
+## M3 — Cor e operações pontuais
 
+- `imgproc::arith`: `add`, `sub`, `absdiff`, `add_weighted` e `bitwise_and`/`or`/`xor`/`not`, sobre `u8`, `u16` e (exceto bit a bit) `f32`, com saturação nos inteiros e máscara opcional; fora da máscara vale o primeiro operando. Operandos ou máscara de outras dimensões dão `ShapeMismatch` ([#57](https://github.com/Bappoz/perceptor/issues/57)).
 - `imgproc::convert`: `convert_scale` (`α·v + β` com saturação), `convert_depth` (`u8`/`u16`/`f32` pela faixa nominal; ida e volta `u8` → `f32` → `u8` exata nos 256 níveis), `normalize_minmax` (intervalo global de todos os canais), `channel_mean_std` e `normalize_mean_std` (por canal, em tons nominais). Origem e destino precisam ter o mesmo número de canais ([#56](https://github.com/Bappoz/perceptor/issues/56)).
 - `imgproc::clahe`: `clahe(view, clip_limit, (colunas, linhas))` — histograma por tile cortado em `clip_limit` vezes a altura uniforme, excesso redistribuído como no OpenCV e interpolação bilinear (Q16) entre as tabelas dos quatro tiles vizinhos. Novo erro `InvalidParameter { name, reason }` para grade vazia ou maior que a imagem e `clip_limit` não positivo ([#55](https://github.com/Bappoz/perceptor/issues/55)).
 - `imgproc::histogram`: `histogram` (um canal) e `histograms` (todos, em uma passada) com máscara opcional, `cumulative`, `equalization_lut` e `equalize`. A equalização é uma `Lut<u8>` calculada da CDF, com arredondamento para cima na metade, o menor nível indo a `0` e o maior a `255`; histograma de um só nível ou vazio dá a identidade ([#54](https://github.com/Bappoz/perceptor/issues/54)).
