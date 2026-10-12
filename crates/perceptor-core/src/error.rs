@@ -26,6 +26,15 @@ pub enum Error {
         actual: usize,
     },
 
+    /// Índice de canal além dos canais do formato.
+    #[error("canal {index} fora de um formato com {channels} canal(is)")]
+    ChannelOutOfRange {
+        /// Índice pedido.
+        index: usize,
+        /// Canais do formato.
+        channels: usize,
+    },
+
     /// O número de canais não tem representação no destino (ex.: formato de arquivo).
     #[error("número de canais não suportado: {channels}")]
     UnsupportedChannels {

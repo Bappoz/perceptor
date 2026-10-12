@@ -6,6 +6,7 @@
 //! Isso permite testar, medir e otimizar cada algoritmo isoladamente; a
 //! integração com o pipeline fica em `perceptor-pipeline`.
 
+pub mod channels;
 pub mod grayscale;
 pub mod sobel;
 

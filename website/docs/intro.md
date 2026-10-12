@@ -20,7 +20,8 @@ O projeto está na versão `0.1` e em desenvolvimento inicial. Hoje existem:
 |---|---|
 | Pipeline | `Pipeline`, `PipelineBuilder`, seis stages ordenados, trait `Plugin` |
 | I/O | leitura de uma imagem do disco e escrita em PNG/JPEG (`IoPlugin`) |
-| Filtros | escala de cinza BT.601 e Sobel 3×3 (`FiltersPlugin`) |
+| Cor | escala de cinza BT.601/BT.709, RGB ↔ BGR ↔ RGBA, alpha, separação e junção de canais |
+| Filtros | Sobel 3×3 (`FiltersPlugin`) |
 | Erros | `perceptor_core::Error` tipado em kernels e I/O |
 | ML | apenas a estrutura do plugin; não há backend de inferência |
 

@@ -76,7 +76,7 @@ Schedule único, erros, plugins, Frame multi-formato, métricas.
 Conversões de cor, threshold, LUT, histograma, aritmética.
 
 - [x] #47 perf(imgproc): grayscale em ponto fixo com pesos BT.601/BT.709 e arredondamento
-- [ ] #48 feat(imgproc): conversões RGB↔BGR↔RGBA e troca/extração de canais
+- [x] #48 feat(imgproc): conversões RGB↔BGR↔RGBA e troca/extração de canais
 - [ ] #49 feat(imgproc): conversão RGB↔HSV/HSL
 - [ ] #50 feat(imgproc): conversão YUV (YUYV, NV12, I420) → RGB
 - [ ] #51 feat(imgproc): threshold binário, inverso, truncado e Otsu
