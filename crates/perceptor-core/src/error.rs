@@ -160,6 +160,14 @@ pub enum Error {
         /// Nome do plugin ausente.
         dependency: String,
     },
+
+    /// O tratador de sinal do processo não pôde ser instalado.
+    #[error("falha ao instalar o tratador de sinal")]
+    SignalHandler {
+        /// Erro original do sistema operacional ou da instalação.
+        #[source]
+        source: BoxError,
+    },
 }
 
 impl Error {

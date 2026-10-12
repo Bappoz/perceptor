@@ -19,7 +19,7 @@ use crate::{
     plugin::Plugin,
     plugins::io::{config::ImageFormat, image_writer::image_writer_system},
 };
-use image_reader::image_reader_system;
+use image_reader::{image_reader_system, IMAGE_READER_SOURCE};
 
 /// Recurso ECS que configura a fonte e o destino de I/O para o [`IoPlugin`].
 #[derive(Resource, Debug, Default)]
@@ -45,8 +45,8 @@ pub struct IoPlugin {
     pub format: ImageFormat,
     /// Mantém os frames no `World` depois da saída, para inspeção.
     ///
-    /// Por padrão cada frame é removido em `Stage::Cleanup` do tick em que foi
-    /// escrito; com `true` eles se acumulam, um por tick.
+    /// Por padrão o frame é removido em `Stage::Cleanup` do tick em que foi
+    /// escrito; com `true` ele continua no `World`.
     pub keep_frames: bool,
 }
 
@@ -56,6 +56,10 @@ impl Plugin for IoPlugin {
     }
 
     fn build(&self, builder: &mut PipelineBuilder) {
+        builder
+            .world_mut()
+            .resource_mut::<crate::stop::Sources>()
+            .register(IMAGE_READER_SOURCE);
         builder.add_input_system(fallible(image_reader_system));
         builder.add_output_system(image_writer_system);
         if !self.keep_frames {

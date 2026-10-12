@@ -8,6 +8,7 @@ Mudanças por milestone, da mais recente para a mais antiga.
 
 ## M2 — Pipeline v2 (em andamento)
 
+- Condições de parada: `run()` devolve um `StopReason`; fontes finitas avisam o fim no recurso `Sources`; limites `with_max_frames` e `with_max_duration` somam-se a `with_max_ticks`; `StopHandle` para parar de outra thread e `stop_on_ctrl_c()` atrás da feature `ctrlc`. `PipelineState::should_stop` deixa de ser um campo (use `request_stop()`), e o `IoPlugin` passa a ler o arquivo uma única vez em vez de a cada tick ([#45](https://github.com/Bappoz/perceptor/issues/45)).
 - `testing::TestPipeline`: harness headless que injeta frames, roda ticks e verifica componentes por entidade; os testes de grayscale e Sobel foram reescritos sobre ele ([#44](https://github.com/Bappoz/perceptor/issues/44)).
 - `PipelineMetrics`: latência por stage e por tick, fps e frames descartados; spans `tracing` `tick` e `stage`. Tudo atrás da feature `metrics` (padrão), mais `trace-systems` para um span por sistema. O pipeline passa a fixar o executor single-thread do `bevy_ecs` ([#43](https://github.com/Bappoz/perceptor/issues/43)).
 - `Frame` multi-formato: `data` passa de `Array3<u8>` para `FrameData`, com acesso tipado `as_image::<P>()` que retorna `FormatMismatch` em vez de entrar em pânico. `FrameMeta` usa `Arc<str>` e `Duration`. Os kernels `convert_to_gray` e `apply_sobel` operam sobre `ImageView`/`Image`, o escritor grava `La8` e `L16`, e `ndarray` sai de `perceptor-imgproc` e `perceptor-pipeline` ([#42](https://github.com/Bappoz/perceptor/issues/42)).

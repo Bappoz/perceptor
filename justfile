@@ -26,6 +26,7 @@ test *args:
     cargo test -q -p perceptor-core --no-default-features {{ args }}
     cargo test -q -p perceptor-core --all-features {{ args }}
     cargo test -q -p perceptor-pipeline --no-default-features {{ args }}
+    cargo test -q -p perceptor-pipeline --features ctrlc {{ args }}
 
 # Rustdoc com links quebrados e docs faltantes tratados como erro
 doc:

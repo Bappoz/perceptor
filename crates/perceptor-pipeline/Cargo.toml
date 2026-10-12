@@ -13,6 +13,8 @@ default = ["metrics"]
 metrics = []
 # Um span por sistema, emitido pelo próprio `bevy_ecs`
 trace-systems = ["bevy_ecs/trace"]
+# `PipelineBuilder::stop_on_ctrl_c`: Ctrl-C como condição de parada
+ctrlc = ["dep:ctrlc"]
 
 [dependencies]
 perceptor-core = { workspace = true, features = ["image"] }
@@ -20,6 +22,7 @@ perceptor-imgproc.workspace = true
 bevy_ecs.workspace = true
 image.workspace = true
 tracing.workspace = true
+ctrlc = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true

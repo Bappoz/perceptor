@@ -10,7 +10,6 @@ use tracing::info;
 use crate::{
     errors::PipelineErrors,
     frame::Frame,
-    pipeline::PipelineState,
     plugins::io::{config::ImageFormat, IoConfig},
 };
 
@@ -54,7 +53,6 @@ pub fn write_frame(frame: &Frame, path: &Path, format: ImageFormat) -> Result<()
 pub fn image_writer_system(
     query: Query<(Entity, &Frame)>,
     config: Res<IoConfig>,
-    mut state: ResMut<PipelineState>,
     mut errors: ResMut<PipelineErrors>,
 ) {
     for (entity, frame) in &query {
@@ -63,5 +61,4 @@ pub fn image_writer_system(
             Err(e) => errors.report_frame("image_writer_system", entity, e),
         }
     }
-    state.should_stop = true;
 }

@@ -58,7 +58,7 @@ Lê uma imagem do disco em `Stage::Input`, escreve os frames em `Stage::Output` 
 | `format` | `ImageFormat` | `Png` (padrão) ou `Jpeg` |
 | `keep_frames` | `bool` | mantém os frames no `World` após a saída (padrão `false`) |
 
-O leitor abre `input_path` a cada tick; o escritor salva e sinaliza parada. Leitura de sequências e outras fontes estão no milestone M7.
+O leitor abre `input_path` uma única vez e avisa o fim da fonte em `Sources`, o que encerra `run()` com `StopReason::EndOfStream`; o escritor salva o frame. Leitura de sequências e outras fontes estão no milestone M7.
 
 ### `FiltersPlugin`
 

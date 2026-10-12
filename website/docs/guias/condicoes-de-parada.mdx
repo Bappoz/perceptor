@@ -1,0 +1,88 @@
+---
+title: Condições de parada
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/stop_conditions.rs';
+
+# Condições de parada
+
+`Pipeline::run()` repete ticks até uma condição de parada valer e devolve qual foi, como um `StopReason`. Sem nenhuma — fonte contínua, sem limite e sem pedido de parada — ele não retorna.
+
+| `StopReason` | Quando | Como configurar |
+|---|---|---|
+| `Requested` | um sistema ou outra thread pediu | `PipelineState::request_stop()` ou `StopHandle::stop()` |
+| `Interrupted` | o processo recebeu Ctrl-C | `PipelineBuilder::stop_on_ctrl_c()` (feature `ctrlc`) |
+| `EndOfStream` | todas as fontes registradas terminaram | nada: a fonte avisa em `Sources` |
+| `FrameLimit` | `frame_count` chegou ao limite | `with_max_frames(n)` |
+| `TickLimit` | `tick_count` chegou ao limite | `with_max_ticks(n)` |
+| `TimeLimit` | o tempo desde o primeiro tick chegou ao limite | `with_max_duration(d)` |
+
+As condições são verificadas **no fim de cada tick**, na ordem da tabela, e a primeira que valer fica registrada. Disso saem três garantias:
+
+- nenhum tick é interrompido no meio: todo frame que entrou em `Stage::Input` passa pelos stages seguintes, inclusive a saída;
+- um limite pode ser ultrapassado dentro do último tick — uma fonte que cria dois frames por tick para em 6 com `with_max_frames(5)`, e `with_max_duration` espera o tick em andamento terminar;
+- o motivo não muda depois: `pipeline.stop_reason()` devolve o mesmo valor, e um novo `run()` em um pipeline parado volta na hora, sem rodar tick.
+
+`tick()` chamado à mão não consulta as condições: ele roda sempre, e só atualiza o motivo ao terminar.
+
+<CodeBlock language="rust" title="examples/stop_conditions.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example stop_conditions
+```
+
+## Fim de fonte
+
+`Sources` é um recurso ECS em que cada fonte finita consta pelo nome:
+
+| Método | Efeito |
+|---|---|
+| `register(nome)` | a fonte passa a constar como ativa; chamado ao montar o pipeline |
+| `finish(nome)` | a fonte terminou; chamado pelo sistema de entrada |
+| `is_finished(nome)` | `true` se a fonte consta e terminou |
+| `all_finished()` | `true` se há ao menos uma fonte e todas terminaram |
+
+`run()` encerra com `EndOfStream` quando `all_finished()` vale. Com duas fontes, espera a mais longa. Sem nenhuma registrada a condição nunca vale, e é assim que uma fonte contínua (câmera, gerador sintético) se comporta: ela simplesmente não se registra.
+
+Registrar antes de rodar é o que impede o pipeline de parar cedo demais: uma fonte que só aparecesse em `Sources` ao terminar deixaria `all_finished()` valer assim que a *outra* fonte acabasse.
+
+A fonte pode avisar o fim no mesmo tick do último frame ou no tick seguinte, quando tenta ler e não há mais nada. No segundo caso o pipeline roda um tick a mais, sem frame.
+
+O `IoPlugin` lê um único arquivo: registra-se como `image_reader`, cria o frame no primeiro tick e termina ali mesmo, com sucesso ou com erro de leitura. Por isso `run()` com `IoPlugin` processa a imagem e retorna sem configuração extra.
+
+## Limites
+
+`PipelineState` guarda os dois contadores que os limites consultam:
+
+| Campo | Significado |
+|---|---|
+| `tick_count` | ticks concluídos; durante um tick ainda não inclui o tick em andamento |
+| `frame_count` | frames criados, contados logo depois de `Stage::Input` |
+
+`frame_count` conta entidades que **ganharam** o componente `Frame`, não as que existem: um frame que fica no `World` por vários ticks conta uma vez, e um frame descartado por `ErrorPolicy::SkipFrame` já no `Input` também conta. Um frame criado por um sistema de outro stage só entra na conta no tick seguinte.
+
+`with_max_duration` mede a partir do início do primeiro tick, não da construção do pipeline. `Duration::ZERO` ainda roda um tick.
+
+## Pedido de parada
+
+Dentro do pipeline, qualquer sistema com `ResMut<PipelineState>` chama `request_stop()`. Fora dele, `pipeline.stop_handle()` devolve um `StopHandle` clonável (`Send + Sync`) cujo `stop()` pode ser chamado de outra thread — um servidor, um timer, uma interface. O handle é só uma flag atômica lida no fim de cada tick; ele não acorda nem interrompe um sistema bloqueado.
+
+## Ctrl-C
+
+```toml
+perceptor = { version = "0.1", features = ["ctrlc"] }
+```
+
+```rust
+let mut pipeline = Pipeline::builder().stop_on_ctrl_c().build()?;
+let reason = pipeline.run()?; // StopReason::Interrupted depois de um Ctrl-C
+pipeline.shutdown();          // os plugins liberam o que seguram
+```
+
+Pontos a saber:
+
+- O tratador é instalado em `build()`, uma vez por processo, e vale para todos os pipelines construídos com `stop_on_ctrl_c()`. Um Ctrl-C anterior à construção de um pipeline não o afeta.
+- Depois de instalado, o Ctrl-C **deixa de encerrar o processo**. Se um sistema travar, o segundo Ctrl-C não ajuda; quem precisa de saída forçada trata isso depois de `run()`.
+- `build()` falha com `Error::SignalHandler` se o processo já tiver outro tratador de Ctrl-C instalado por meio da crate `ctrlc`.
+- A feature traz a crate [`ctrlc`](https://crates.io/crates/ctrlc) como dependência. A biblioteca padrão do Rust não expõe sinais, e chamar `sigaction`/`SetConsoleCtrlHandler` diretamente exigiria `unsafe` em `perceptor-pipeline`. Sem a feature, um `StopHandle` ligado ao tratador que a aplicação já tiver cobre o mesmo caso.

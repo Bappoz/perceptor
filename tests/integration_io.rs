@@ -5,7 +5,7 @@ use perceptor::pipeline::{
     frame::Frame,
     pipeline::{Pipeline, PipelineState},
     plugins::io::IoPlugin,
-    ErrorPolicy,
+    ErrorPolicy, StopReason,
 };
 
 fn create_test_png(path: &std::path::Path, width: u32, height: u32) {
@@ -90,9 +90,10 @@ fn invalid_input_path_is_recorded_without_failing_in_continue() {
         .build()
         .unwrap();
 
-    pipeline.run().unwrap();
+    let reason = pipeline.run().unwrap();
 
-    assert!(pipeline.world().resource::<PipelineState>().should_stop);
+    assert_eq!(reason, StopReason::EndOfStream);
+    assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 1);
     let errors: Vec<_> = pipeline.errors().iter().collect();
     assert_eq!(errors.len(), 1);
     assert!(matches!(errors[0].error, Error::Decode { .. }));
@@ -119,13 +120,12 @@ fn unwritable_output_discards_the_frame_in_skip_frame() {
         .unwrap();
 
     pipeline.tick().unwrap();
-    pipeline.tick().unwrap();
 
     let errors: Vec<_> = pipeline.errors().iter().collect();
     assert_eq!(errors.len(), 1);
     assert!(matches!(&errors[0].error, Error::Encode { path, .. } if path == &bad_output));
     assert!(errors[0].frame.is_some());
-    assert_eq!(pipeline.errors().total(), 2);
+    assert_eq!(pipeline.errors().total(), 1);
     let world = pipeline.world_mut();
     let mut q = world.query::<&Frame>();
     assert_eq!(q.iter(world).count(), 0, "frames com erro são descartados");
@@ -150,9 +150,9 @@ fn unwritable_output_makes_tick_fail_in_fail_fast() {
     assert!(matches!(pipeline.tick(), Err(Error::Encode { .. })));
 }
 
-/// Em uso contínuo os frames não se acumulam: cada um é despawnado depois da saída.
+/// O frame não fica no `World`: é despawnado depois da saída, no mesmo tick.
 #[test]
-fn frames_are_despawned_after_output() {
+fn frame_is_despawned_after_output() {
     let tmp = tempfile::tempdir().unwrap();
     let input = tmp.path().join("input.png");
     let output = tmp.path().join("output_despawn.png");
@@ -167,19 +167,19 @@ fn frames_are_despawned_after_output() {
         .build()
         .unwrap();
 
-    for _ in 0..3 {
-        pipeline.tick().unwrap();
-        let world = pipeline.world_mut();
-        let mut q = world.query::<&Frame>();
-        assert_eq!(q.iter(world).count(), 0, "frame deve sair no fim do tick");
-    }
-    assert_eq!(pipeline.world().resource::<PipelineState>().tick_count, 3);
+    pipeline.tick().unwrap();
+
+    let state = pipeline.world().resource::<PipelineState>();
+    assert_eq!((state.tick_count, state.frame_count), (1, 1));
     assert!(output.exists(), "a saída é escrita antes do despawn");
+    let world = pipeline.world_mut();
+    let mut q = world.query::<&Frame>();
+    assert_eq!(q.iter(world).count(), 0, "frame deve sair no fim do tick");
 }
 
-/// `keep_frames` preserva o comportamento antigo: um frame novo por tick.
+/// `keep_frames` deixa o frame no `World`; a fonte de um arquivo só não o relê.
 #[test]
-fn keep_frames_accumulates_one_frame_per_tick() {
+fn keep_frames_keeps_the_single_frame_across_ticks() {
     let tmp = tempfile::tempdir().unwrap();
     let input = tmp.path().join("input.png");
     create_test_png(&input, 4, 6);
@@ -199,5 +199,5 @@ fn keep_frames_accumulates_one_frame_per_tick() {
     }
     let world = pipeline.world_mut();
     let mut q = world.query::<&Frame>();
-    assert_eq!(q.iter(world).count(), 3);
+    assert_eq!(q.iter(world).count(), 1);
 }

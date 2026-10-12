@@ -23,6 +23,7 @@ pub mod plugin;
 pub mod plugins;
 pub mod prelude;
 pub mod schedule;
+pub mod stop;
 pub mod testing;
 
 pub use errors::{fallible, ErrorPolicy, PipelineErrors, SystemError};
@@ -32,3 +33,4 @@ pub use metrics::{PipelineMetrics, Timing};
 pub use pipeline::{despawn_processed_frames_system, Pipeline, PipelineBuilder, PipelineState};
 pub use plugin::Plugin;
 pub use schedule::Stage;
+pub use stop::{Sources, StopHandle, StopReason};
