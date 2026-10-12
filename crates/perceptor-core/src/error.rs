@@ -114,6 +114,13 @@ pub enum Error {
         actual: (usize, usize),
     },
 
+    /// O lado de uma janela local (bloco, kernel) deve ser ímpar e maior que 1.
+    #[error("janela de lado {size} inválida: o lado precisa ser ímpar e maior que 1")]
+    InvalidWindowSize {
+        /// Lado pedido.
+        size: usize,
+    },
+
     /// O comprimento do buffer não corresponde a um número inteiro de pixels.
     #[error("buffer com {len} valores não é múltiplo de {channels} canal(is)")]
     BufferLength {
@@ -239,6 +246,15 @@ mod tests {
     fn unsupported_channels_reports_count() {
         let err = Error::UnsupportedChannels { channels: 2 };
         assert_eq!(err.to_string(), "número de canais não suportado: 2");
+    }
+
+    #[test]
+    fn invalid_window_size_reports_the_side() {
+        let err = Error::InvalidWindowSize { size: 4 };
+        assert_eq!(
+            err.to_string(),
+            "janela de lado 4 inválida: o lado precisa ser ímpar e maior que 1"
+        );
     }
 
     #[test]
