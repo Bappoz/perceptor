@@ -15,6 +15,7 @@ pub mod grayscale;
 pub mod histogram;
 pub mod hsv;
 pub mod lut;
+pub mod range;
 pub mod sobel;
 pub mod threshold;
 pub mod yuv;

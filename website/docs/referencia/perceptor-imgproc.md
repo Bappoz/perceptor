@@ -107,6 +107,16 @@ pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) ->
 
 `ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
 
+## `range`
+
+Guia: [Faixa de cor](../guias/faixa-de-cor.mdx).
+
+```rust
+pub fn in_range<P: Pixel>(input: ImageView<'_, P>, lower: P, upper: P) -> Result<Image<L8>>
+```
+
+Limites inclusivos, um pixel do mesmo formato. `255` onde todos os canais estão na faixa, `0` fora. Em `Hsv8`, `Hsl8`, `HsvF32` e `HslF32`, `lower.h > upper.h` atravessa o zero do matiz; nos demais canais e formatos, um limite invertido dá faixa vazia. Erro em runtime: só `Allocation`.
+
 ## `arith`
 
 Guia: [Aritmética e lógica](../guias/aritmetica.mdx).
