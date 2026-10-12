@@ -4,6 +4,7 @@ title: Limiarização
 
 import CodeBlock from '@theme/CodeBlock';
 import Example from '!!raw-loader!@site/../examples/threshold.rs';
+import AdaptiveExample from '!!raw-loader!@site/../examples/adaptive_threshold.rs';
 
 # Limiarização
 
@@ -59,4 +60,49 @@ Otsu supõe um histograma com **dois modos**. Ele sempre devolve um número, mes
 
 - imagem com um modo só (fundo sem objeto): o limiar corta o próprio modo ao meio e a máscara vira ruído;
 - classes muito desbalanceadas (objeto minúsculo): o limiar tende a dividir o fundo;
-- iluminação desigual (sombra, gradiente): nenhum limiar global serve, e o caminho é o limiar adaptativo, que decide por vizinhança.
+- iluminação desigual (sombra, gradiente): nenhum limiar global serve, e o caminho é o [limiar adaptativo](#limiar-adaptativo), que decide por vizinhança.
+
+## Limiar adaptativo
+
+Quando a iluminação varia pela imagem, o que é "claro" depende de onde se olha. O limiar adaptativo compara cada pixel com a **média da vizinhança dele**, menos uma constante `c`. Fica em `perceptor::imgproc::adaptive`.
+
+<CodeBlock language="rust" title="examples/adaptive_threshold.rs">{AdaptiveExample}</CodeBlock>
+
+```bash
+cargo run --example adaptive_threshold
+```
+
+```text
+ligado  ⇔  v > média_local − c   ⇔   v + c > média_local
+```
+
+| Função | Saída |
+|---|---|
+| `adaptive_threshold(view, max, método, block_size, c)` | `max` onde liga, `0` nos demais |
+| `adaptive_threshold_inv(view, max, método, block_size, c)` | o complemento: `0` onde liga, `max` nos demais |
+
+### Parâmetros
+
+- **`block_size`**: lado da janela. Precisa ser **ímpar e maior que 1**; `14` ou `1` devolvem `InvalidWindowSize`. Janela pequena segue o ruído; janela grande segue só a iluminação. Uma boa regra é que ela seja maior que a maior estrutura que se quer manter (a espessura de um traço, por exemplo).
+- **`c`**: constante subtraída da média. `c > 0` liga mais pixels (limiar mais permissivo); `c < 0` liga menos. Em uma região plana, `c = 0` não liga nada, porque o pixel é igual à média e a comparação é estrita; é `c` quem separa ruído de traço.
+- **`method`**: `Mean` pesa a janela por igual; `Gaussian` pesa o centro mais que a borda, com `σ = 0,3·((block_size − 1)/2 − 1) + 0,8` (a regra do OpenCV).
+
+### Como é calculado
+
+- **Média**: somas por prefixo, uma passada por eixo. O custo por pixel é constante, qualquer que seja `block_size`.
+- **Gaussiana**: kernel separável em ponto fixo Q16, com os pesos arredondados para inteiros que somam exatamente `2¹⁶` (o resto do arredondamento vai para o centro, o que preserva a simetria). O custo por pixel cresce com `block_size`, linear em cada eixo.
+- **Comparação exata**: as somas ficam em inteiros e o pixel é comparado com `soma / área` por `(v + c) · área > soma`, sem divisão. Não existe erro de arredondamento no limite, e por isso as propriedades abaixo valem **exatamente**.
+- **Borda**: replicada; fora da imagem vale o pixel mais próximo. Uma janela maior que a imagem é aceita. Perto da borda, em uma imagem com gradiente, a média fica enviesada para o lado do gradiente que foi replicado — compense com `c`.
+
+### Verificado
+
+- A média confere, pixel a pixel, com uma referência ingênua O(n·b²) em inteiros, para janelas de 3 a 31 (inclusive maiores que a imagem), qualquer `c` e `max`.
+- Imagem constante: liga tudo com `c > 0` e nada com `c ≤ 0`, nos dois métodos.
+- Rampa linear: longe da borda, a média é exatamente o próprio pixel, nos dois métodos.
+- No gradiente de iluminação do exemplo (60 → 200, traços 50 níveis mais escuros), a janela 15 com `c = 12` recupera os traços sem nenhum erro, e o Otsu global erra centenas de pixels. As imagens-golden foram conferidas por um cálculo independente em Python (numpy + PIL).
+
+### Limites
+
+- Só `L8`, e só os tipos binário e inverso: o limiar varia por pixel, então `Trunc` e `ToZero` não têm um "limiar" único para devolver.
+- Em área plana sem estrutura (fundo liso sem traço), qualquer ruído acima de `c` vira "ligado": aumente `c` ou filtre antes.
+- Janela menor que a espessura do traço faz o interior do traço virar "fundo"; o contorno aparece, o miolo não.

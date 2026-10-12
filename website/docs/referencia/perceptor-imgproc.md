@@ -107,6 +107,17 @@ pub fn threshold_otsu(input: ImageView<'_, L8>, max: u8, kind: ThresholdType) ->
 
 `ThresholdType`: `Binary` (padrão), `BinaryInv`, `Trunc`, `ToZero`, `ToZeroInv`; `ThresholdType::apply(v, t, max)` aplica o tipo a um nível. A comparação é `v > t`. Erro em runtime: só `Allocation`.
 
+## `adaptive`
+
+Guia: [Limiar adaptativo](../guias/limiarizacao.mdx#limiar-adaptativo).
+
+```rust
+pub fn adaptive_threshold(input: ImageView<'_, L8>, max: u8, method: AdaptiveMethod, block_size: usize, c: i32) -> Result<Image<L8>>
+pub fn adaptive_threshold_inv(input: ImageView<'_, L8>, max: u8, method: AdaptiveMethod, block_size: usize, c: i32) -> Result<Image<L8>>
+```
+
+`AdaptiveMethod`: `Mean` (padrão) ou `Gaussian`. Liga o pixel quando `v + c > média_local`; a versão `_inv` devolve o complemento. Borda replicada; janela maior que a imagem é aceita. Erros: `InvalidWindowSize` (`block_size` par, menor que 3 ou grande demais para somar em `u64`) e `Allocation`.
+
 ## `yuv`
 
 Guia: [YUV → RGB](../guias/cor-e-canais.mdx#yuv--rgb).
