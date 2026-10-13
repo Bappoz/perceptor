@@ -23,7 +23,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Guias',
-      items: ['guias/escrevendo-um-plugin', 'guias/kernels-como-sistemas', 'guias/cor-e-canais', 'guias/faixa-de-cor', 'guias/limiarizacao', 'guias/lut-e-gamma', 'guias/histograma', 'guias/profundidade-e-normalizacao', 'guias/aritmetica', 'guias/metricas', 'guias/condicoes-de-parada', 'guias/testes', 'guias/fuzzing'],
+      items: ['guias/escrevendo-um-plugin', 'guias/kernels-como-sistemas', 'guias/cor-e-canais', 'guias/faixa-de-cor', 'guias/limiarizacao', 'guias/lut-e-gamma', 'guias/histograma', 'guias/profundidade-e-normalizacao', 'guias/aritmetica', 'guias/convolucao', 'guias/metricas', 'guias/condicoes-de-parada', 'guias/testes', 'guias/fuzzing'],
     },
     {
       type: 'category',

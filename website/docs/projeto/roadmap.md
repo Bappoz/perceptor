@@ -11,8 +11,8 @@ O desenvolvimento é feito em incrementos pequenos: uma issue, uma branch, um PR
 | [M0](https://github.com/Bappoz/perceptor/milestone/1) | Fundação: workspace, tooling, CI, site | concluído |
 | [M1](https://github.com/Bappoz/perceptor/milestone/2) | Core de imagem: `Image<P>`, views, formatos de pixel | concluído |
 | [M2](https://github.com/Bappoz/perceptor/milestone/3) | Pipeline v2: schedule único, erros, métricas | concluído |
-| [M3](https://github.com/Bappoz/perceptor/milestone/4) | Cor e operações pontuais | em andamento |
-| [M4](https://github.com/Bappoz/perceptor/milestone/5) | Filtros espaciais | planejado |
+| [M3](https://github.com/Bappoz/perceptor/milestone/4) | Cor e operações pontuais | concluído |
+| [M4](https://github.com/Bappoz/perceptor/milestone/5) | Filtros espaciais | em andamento |
 | [M5](https://github.com/Bappoz/perceptor/milestone/6) | Geometria | planejado |
 | [M6](https://github.com/Bappoz/perceptor/milestone/7) | Performance: benchmarks, SIMD, zero alocação | planejado |
 | [M7](https://github.com/Bappoz/perceptor/milestone/8) | I/O e hardware: V4L2, vídeo, display | planejado |

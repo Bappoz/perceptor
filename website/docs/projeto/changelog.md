@@ -6,6 +6,10 @@ title: Changelog
 
 Mudanças por milestone, da mais recente para a mais antiga.
 
+## M4 — Filtros espaciais (em andamento)
+
+- `imgproc::convolve`: `Kernel` (lados ímpares, âncora no centro, `from_rows` e `flipped`), `correlate2d` e `convolve2d` com `BorderMode`, sobre qualquer formato de `u8`, `u16` ou `f32`. O formato de saída é escolhido na chamada: inteiro arredonda e satura, `f32` guarda o sinal. É a referência escalar dos filtros lineares, conferida com o `filter2D` do OpenCV ([#59](https://github.com/Bappoz/perceptor/issues/59)).
+
 ## M3 — Cor e operações pontuais
 
 - `imgproc::range`: `in_range(view, lower, upper)` devolve uma máscara `L8` (255/0) dos pixels com `lower ≤ canal ≤ upper` em todos os canais, com limites inclusivos dados como um pixel do mesmo formato. Em HSV/HSL, `lower.h > upper.h` é a faixa que atravessa o zero do matiz ([#58](https://github.com/Bappoz/perceptor/issues/58)).

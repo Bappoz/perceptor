@@ -56,7 +56,7 @@ cargo run --example custom_plugin
 | I/O | read one image from disk, write PNG/JPEG (`read_frame`, `write_frame`, `IoPlugin`) |
 | Color | BT.601/BT.709 grayscale, RGB ↔ BGR ↔ RGBA, RGB ↔ HSV/HSL (8-bit and f32), YUV (I420, NV12, YUYV) → RGB, alpha, channel split/merge |
 | Point ops | global threshold (5 types), Otsu, adaptive threshold (mean, Gaussian), LUT (gamma, gain/offset, invert; 8 and 16 bit), per-channel histogram with mask, equalization, CLAHE, depth conversion (`u8`/`u16`/`f32`) and normalization (min-max, mean/std), color-range mask (`in_range`, hue wrap), saturated arithmetic and bitwise logic with mask (`add`, `sub`, `absdiff`, `add_weighted`, `bitwise_*`) |
-| Filters | 3×3 Sobel magnitude |
+| Filters | generic 2D correlation/convolution with any odd kernel and `BorderMode` (scalar reference), 3×3 Sobel magnitude |
 | Errors | typed `perceptor_core::Error` across kernels and I/O |
 
 Everything else — own image type, SIMD, camera capture, ML inference, GPU — is planned as one issue per increment in the [roadmap](ROADMAP.md).
