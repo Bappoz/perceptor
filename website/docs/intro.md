@@ -22,7 +22,7 @@ O projeto está na versão `0.1` e em desenvolvimento inicial. Hoje existem:
 | I/O | leitura de uma imagem do disco e escrita em PNG/JPEG (`IoPlugin`) |
 | Cor | escala de cinza BT.601/BT.709, RGB ↔ BGR ↔ RGBA, RGB ↔ HSV/HSL, YUV (I420, NV12, YUYV) → RGB, alpha, separação e junção de canais |
 | Operações pontuais | limiarização global (5 tipos), Otsu e limiarização adaptativa (média, gaussiana), tabelas de consulta (gamma, ganho/offset, inversão; 8 e 16 bits), histograma por canal com máscara, equalização, CLAHE, conversão de profundidade (`u8`/`u16`/`f32`) e normalização (min-max, média/desvio), máscara por faixa de cor (`in_range`, matiz que dá a volta), aritmética saturada e lógica bit a bit com máscara (`add`, `sub`, `absdiff`, `add_weighted`, `bitwise_*`) |
-| Filtros | Sobel 3×3 (`FiltersPlugin`) |
+| Filtros | correlação e convolução 2D com kernel ímpar qualquer e `BorderMode` (referência escalar), Sobel 3×3 (`FiltersPlugin`) |
 | Erros | `perceptor_core::Error` tipado em kernels e I/O |
 | ML | apenas a estrutura do plugin; não há backend de inferência |
 

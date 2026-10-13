@@ -91,7 +91,7 @@ pub struct ChannelStats {
     pub std: f64,
 }
 
-fn check_channels<P: Pixel, Q: Pixel>() -> Result<()> {
+pub(crate) fn check_channels<P: Pixel, Q: Pixel>() -> Result<()> {
     if P::CHANNELS == Q::CHANNELS {
         Ok(())
     } else {

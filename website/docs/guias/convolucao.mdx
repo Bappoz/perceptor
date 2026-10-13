@@ -1,0 +1,96 @@
+---
+title: Convolução 2D
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Example from '!!raw-loader!@site/../examples/convolve.rs';
+
+# Convolução e correlação 2D
+
+Um filtro linear troca cada pixel por uma soma ponderada da vizinhança dele. Os pesos formam o **kernel**; mudando o kernel, a mesma conta vira blur, realce, gradiente ou Laplaciano. `perceptor::imgproc::convolve` tem a versão de **referência**: kernel qualquer, qualquer formato de pixel, escrita para ser lida e conferida — é contra ela que os filtros otimizados dos próximos chunks são comparados.
+
+<CodeBlock language="rust" title="examples/convolve.rs">{Example}</CodeBlock>
+
+```bash
+cargo run --example convolve
+```
+
+## O kernel
+
+```rust
+let sobel_x = Kernel::from_rows([[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]])?;
+let blur = Kernel::new(3, 3, vec![1.0 / 9.0; 9])?; // pesos em ordem de linhas
+```
+
+Os lados são **ímpares** (podem ser diferentes: `1×5`, `3×1`) e a âncora é o centro. Lado par ou zero, quantidade de pesos diferente de `largura × altura` e peso não finito dão `InvalidParameter`.
+
+## Correlação ou convolução
+
+```text
+correlação:  saída(x, y) = Σ k(i, j) · entrada(x + i − cx, y + j − cy)
+convolução:  saída(x, y) = Σ k(i, j) · entrada(x − i + cx, y − j + cy)
+```
+
+| Função | O peso `(i, j)` multiplica | Equivale a |
+|---|---|---|
+| `correlate2d` | o vizinho **sob** ele | `cv2.filter2D` |
+| `convolve2d` | o vizinho do lado **oposto** | `correlate2d` com `kernel.flipped()` |
+
+A diferença é só um giro de 180° no kernel. Para um kernel simétrico (caixa, gaussiana, Laplaciano) as duas dão o mesmo resultado; para um antissimétrico, como o Sobel, o sinal troca. Quando a ordem importa:
+
+- para **comparar com o OpenCV** ou aplicar um kernel "como está desenhado", use `correlate2d`;
+- para **compor filtros**, use `convolve2d`: a convolução é associativa, então aplicar `a` e depois `b` equivale a aplicar uma vez a convolução de `a` com `b`.
+
+## Formato de saída
+
+O tipo de saída é escolhido na chamada e precisa ter o mesmo número de canais da entrada (senão, `ChannelMismatch`). A soma é feita em `f64` e convertida só no fim:
+
+| Saída | Conversão |
+|---|---|
+| `u8`, `u16` | arredonda para o mais próximo (metade para longe de zero) e **satura** em `[0, máx]` |
+| `f32` | sem corte, com sinal |
+
+```rust
+let borrado: Image<L8> = correlate2d(view, &blur, BorderMode::Reflect101)?;
+let dx: Image<LF32> = correlate2d(view, &sobel_x, BorderMode::Reflect101)?;
+```
+
+Um gradiente em `L8` perde metade da informação: toda resposta negativa vira `0`. Para derivadas, peça `f32`.
+
+Os valores **não são reescalados**: um `u8` `200` entra na conta como `200.0`, e é isso que sai em `LF32`. Para a faixa nominal `[0, 1]`, converta com [`convert_depth`](./profundidade-e-normalizacao.mdx) antes ou depois.
+
+Cada canal é filtrado independentemente, com o mesmo kernel.
+
+## Bordas
+
+Nas beiradas faltam vizinhos; o `BorderMode` diz de onde eles vêm.
+
+| Modo | Fora da imagem | Costuma servir para |
+|---|---|---|
+| `Constant(p)` | o pixel `p` | máscaras; cria um degrau artificial na borda |
+| `Replicate` | o pixel da borda | blur, sem inventar gradiente |
+| `Reflect` | espelho, repetindo a borda | blur |
+| `Reflect101` | espelho, sem repetir a borda | o padrão do OpenCV para filtros |
+| `Wrap` | o outro lado da imagem | texturas periódicas |
+
+A escolha muda o resultado só na faixa de `largura/2` colunas e `altura/2` linhas em volta da imagem. O kernel pode ser maior que a imagem: os modos de espelho e `Wrap` dão quantas voltas forem necessárias.
+
+## Custo
+
+`O(largura · altura · área do kernel)`, em uma thread, alocando uma linha estendida por linha do kernel. É proposital: esta é a versão simples e auditável. Um kernel separável (caixa, gaussiana, Sobel) custa `O(largura + altura)` do kernel por pixel no filtro separável, e o blur de caixa `O(1)` com soma deslizante — os dois chunks seguintes do [roadmap](../projeto/roadmap.md), verificados contra esta função.
+
+## Limites
+
+- Âncora sempre no centro; não há âncora deslocada nem kernel de lado par.
+- Sem `delta` nem fator de escala embutidos: normalize os pesos ao montar o kernel.
+- Pesos em `f32`, soma em `f64`. Kernels inteiros pequenos sobre `u8` dão resultado exato em `LF32`.
+- Ainda não há um plugin de pipeline pronto para isto. Para usar em um stage, registre uma closure com [`add_op`](./kernels-como-sistemas.mdx).
+
+## Verificado
+
+- Kernel impulso (`1` no centro) é a identidade em `L8`, `Rgb8` e `LF32`, para lados de 1 a 7 e qualquer borda.
+- Linearidade em `f32`: `conv(a + b) == conv(a) + conv(b)` e `conv(c · a) == c · conv(a)`, com igualdade **exata** (proptest com valores e pesos inteiros).
+- Igual à definição escrita pixel a pixel com `get_bordered`, para kernels e bordas aleatórios.
+- Igual ao `cv2.filter2D` do OpenCV 5.0.0 em uma imagem 5×4 com kernel assimétrico, nas bordas `Reflect101`, `Replicate` e `Constant(0)`.
+- A magnitude das correlações com os dois kernels de Sobel e borda zero reproduz o `apply_sobel` existente.
+- `convolve2d(k) == correlate2d(k.flipped())`; um blur de caixa normalizado mantém uma imagem constante; uma região de interesse é filtrada como uma cópia dela.

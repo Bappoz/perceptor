@@ -94,7 +94,7 @@ Convolução, blur, gradientes, bordas, morfologia.
 
 - [ ] #11 feat: SobelMap como output padrão — copiar magnitude para Frame.data
 - [ ] #15 feat: GaussianBlurPlugin — kernel 3×3 para redução de ruído
-- [ ] #59 feat(imgproc): convolução 2D genérica com BorderMode
+- [x] #59 feat(imgproc): convolução 2D genérica com BorderMode
 - [ ] #60 feat(imgproc): filtro separável (linha/coluna) com buffer intermediário reutilizável
 - [ ] #61 feat(imgproc): box blur por soma deslizante
 - [ ] #62 refactor(imgproc): Sobel/Scharr sobre filtro separável com magnitude e orientação

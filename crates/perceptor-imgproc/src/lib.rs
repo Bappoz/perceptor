@@ -11,6 +11,7 @@ pub mod arith;
 pub mod channels;
 pub mod clahe;
 pub mod convert;
+pub mod convolve;
 pub mod grayscale;
 pub mod histogram;
 pub mod hsv;

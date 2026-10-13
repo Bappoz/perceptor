@@ -134,6 +134,27 @@ pub fn bitwise_not<P: Pixel>(a: ImageView<'_, P>, mask: Option<ImageView<'_, L8>
 
 `P::Subpixel` é `u8`, `u16` ou `f32` (trait `Arith`); as funções `bitwise_*` exigem `u8` ou `u16` (trait `Bits`). Máscara: liga onde `≠ 0`; fora dela, a saída é o primeiro operando. Erros: `ShapeMismatch` (operando ou máscara de outras dimensões) e `Allocation`.
 
+## `convolve`
+
+Guia: [Convolução 2D](../guias/convolucao.mdx).
+
+```rust
+pub struct Kernel { /* largura, altura e pesos f32 em ordem de linhas */ }
+impl Kernel {
+    pub fn new(width: usize, height: usize, weights: Vec<f32>) -> Result<Kernel>
+    pub fn from_rows<const W: usize, const H: usize>(rows: [[f32; W]; H]) -> Result<Kernel>
+    pub const fn width(&self) -> usize
+    pub const fn height(&self) -> usize
+    pub fn weights(&self) -> &[f32]
+    pub fn flipped(&self) -> Kernel
+}
+
+pub fn correlate2d<P: Pixel, Q: Pixel>(input: ImageView<'_, P>, kernel: &Kernel, border: BorderMode<P>) -> Result<Image<Q>>
+pub fn convolve2d<P: Pixel, Q: Pixel>(input: ImageView<'_, P>, kernel: &Kernel, border: BorderMode<P>) -> Result<Image<Q>>
+```
+
+`P::Subpixel` e `Q::Subpixel` são `u8`, `u16` ou `f32` (trait `Sample`). Lados ímpares, âncora no centro. `correlate2d` é o `filter2D` do OpenCV; `convolve2d` é a correlação com `kernel.flipped()`. A soma é feita em `f64` sobre os valores numéricos, sem reescalar: saída inteira arredonda e satura, saída `f32` não corta. Erros: `InvalidParameter` (lado par ou zero, quantidade de pesos errada, peso não finito, em `Kernel::new`), `ChannelMismatch` (saída com outro número de canais) e `Allocation`.
+
 ## `convert`
 
 Guia: [Profundidade e normalização](../guias/profundidade-e-normalizacao.mdx).
